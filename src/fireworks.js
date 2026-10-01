@@ -1,7 +1,5 @@
-'use strict';
-
 // Feux d'artifice sur un <canvas> plein écran.
-window.Fireworks = (() => {
+export const Fireworks = (() => {
   let canvas;
   let ctx;
   let raf = 0;
@@ -10,6 +8,7 @@ window.Fireworks = (() => {
   let particles = [];
   let lastLaunch = 0;
   let dpr = 1;
+  let onExplode = null;
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -33,6 +32,7 @@ window.Fireworks = (() => {
   }
 
   function explode(r) {
+    if (onExplode) onExplode();
     const count = Math.floor(rand(60, 100));
     const speed = rand(2.5, 5) * dpr;
     const ring = Math.random() < 0.3;
@@ -96,8 +96,9 @@ window.Fireworks = (() => {
     });
   }
 
-  function start(el) {
+  function start(el, options = {}) {
     canvas = el;
+    onExplode = options.onExplode || null;
     ctx = canvas.getContext('2d');
     resize();
     window.addEventListener('resize', resize);

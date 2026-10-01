@@ -1,8 +1,6 @@
-'use strict';
-
-const test = require('node:test');
-const assert = require('node:assert');
-const sudoku = require('../server/sudoku');
+import test from 'node:test';
+import assert from 'node:assert';
+import * as sudoku from '../src/sudoku.js';
 
 function isValidSolution(grid) {
   for (let u = 0; u < 9; u++) {

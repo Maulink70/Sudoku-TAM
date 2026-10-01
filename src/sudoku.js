@@ -1,9 +1,7 @@
-'use strict';
-
 // Générateur et solveur de Sudoku.
 // Une grille est un tableau de 81 entiers (0 = case vide), lu ligne par ligne.
 
-const LEVELS = {
+export const LEVELS = {
   facile: { label: 'Facile', clues: 40 },
   moyen: { label: 'Moyen', clues: 32 },
   difficile: { label: 'Difficile', clues: 27 },
@@ -60,7 +58,7 @@ function shuffle(arr, rand = Math.random) {
  * Compte les solutions d'une grille (s'arrête à `limit`).
  * Si `out` est fourni, la première solution trouvée y est copiée.
  */
-function countSolutions(grid, limit = 2, out = null, rand = null) {
+export function countSolutions(grid, limit = 2, out = null, rand = null) {
   const g = grid.slice();
   const rows = new Array(9).fill(0);
   const cols = new Array(9).fill(0);
@@ -124,7 +122,7 @@ function countSolutions(grid, limit = 2, out = null, rand = null) {
   return count;
 }
 
-function solve(grid) {
+export function solve(grid) {
   const out = new Array(81).fill(0);
   return countSolutions(grid, 1, out) === 1 ? out : null;
 }
@@ -139,7 +137,7 @@ function randomSolution(rand = Math.random) {
  * Essaie de résoudre uniquement avec des techniques simples
  * (singletons nus et cachés). Renvoie true si la grille est entièrement résolue.
  */
-function solvableBySingles(grid) {
+export function solvableBySingles(grid) {
   const g = grid.slice();
   const cand = new Array(81).fill(0);
   const recompute = () => {
@@ -195,7 +193,7 @@ function solvableBySingles(grid) {
  * Génère une grille pour le niveau demandé.
  * Renvoie { puzzle, solution } (tableaux de 81 entiers).
  */
-function generate(level = 'moyen', { timeBudgetMs = 2500, rand = Math.random } = {}) {
+export function generate(level = 'moyen', { timeBudgetMs = 2500, rand = Math.random } = {}) {
   const cfg = LEVELS[level];
   if (!cfg) throw new Error(`Niveau inconnu : ${level}`);
   const deadline = Date.now() + timeBudgetMs;
@@ -239,11 +237,3 @@ function generate(level = 'moyen', { timeBudgetMs = 2500, rand = Math.random } =
     return (c.styleOk ? 100 : 0) - Math.abs(c.clues - cfg.clues);
   }
 }
-
-module.exports = {
-  LEVELS,
-  generate,
-  solve,
-  countSolutions,
-  solvableBySingles,
-};

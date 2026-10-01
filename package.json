@@ -1,20 +1,24 @@
 {
   "name": "sudoku-tam",
   "version": "1.0.0",
-  "description": "Sudoku en ligne installable (PWA) avec comptes joueurs et sauvegarde des parties",
-  "main": "server/index.js",
-  "type": "commonjs",
+  "description": "Sudoku en ligne installable (PWA) avec Firebase (comptes et parties) et hébergement Vercel",
+  "type": "module",
   "private": true,
   "engines": {
-    "node": ">=22.13"
+    "node": ">=20"
   },
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning server/index.js",
-    "dev": "node --disable-warning=ExperimentalWarning --watch server/index.js",
-    "create-user": "node --disable-warning=ExperimentalWarning server/cli.js",
-    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+    "build": "esbuild src/app.js --bundle --minify --format=esm --target=es2020 --sourcemap --outfile=public/build/app.js",
+    "dev": "esbuild src/app.js --bundle --format=esm --sourcemap --outfile=public/build/app.js --watch",
+    "emulators": "npx -y firebase-tools@15 emulators:start --only auth,firestore --project demo-sudoku",
+    "test": "node --test test/sudoku.test.js",
+    "test:rules": "npx -y firebase-tools@15 emulators:exec --only firestore --project demo-sudoku \"node --test test/rules.test.js\""
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "firebase": "^12.19.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "esbuild": "^0.28.2"
   }
 }

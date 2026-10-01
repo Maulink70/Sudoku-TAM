@@ -1,94 +1,76 @@
 # Sudoku-TAM
 
 Sudoku classique en ligne, **installable sur smartphone** (PWA), avec comptes joueurs et
-sauvegarde des parties sur le serveur.
+sauvegarde des parties dans **Firebase**. L'appli est hébergée sur **Vercel** :
+https://sudoku-tam.vercel.app
 
 ## Fonctionnalités
 
 - **4 niveaux** : Facile, Moyen, Difficile, Extrême. Chaque grille a une **solution unique**.
-  Facile et Moyen se résolvent par simple logique ; Extrême demande des techniques avancées.
-- **Jeu tactile** : touchez une case puis un chiffre du pavé. Lignes, colonnes, blocs et chiffres
-  identiques sont surlignés ; les erreurs s'affichent en rouge.
-- **Outils** : Annuler, Effacer, Notes (crayon) et **10 bonus** par partie (chaque bonus remplit
-  une case au hasard).
-- **Chronomètre** avec pause ; il s'arrête automatiquement quand l'application passe en arrière-plan.
-- **Victoire** : tous les chiffres sautent de joie, un message défile et des feux d'artifice partent.
-- **Comptes** : connexion par e-mail et mot de passe. Seul l'administrateur crée les comptes.
-- **Sauvegarde serveur** automatique : on peut quitter et reprendre une partie plus tard.
-- **Historique** pour chaque joueur, avec ses meilleurs temps par niveau.
-- **Administration** : création, modification, désactivation et suppression des joueurs ;
-  changement de mot de passe ; liste de toutes les parties (date de début, joueur, niveau, statut
-  avec temps de jeu, erreurs, bonus), filtrable par statut et par joueur.
+- **Jeu tactile** au design inspiré de Sudoku.com : on touche une case, puis un chiffre.
+  Outils Annuler, Effacer, Notes, et **10 bonus** par partie (chaque bonus remplit une case au
+  hasard ; elle s'affiche en violet et ne peut plus être modifiée).
+- **Vérification à la fin** : aucune aide pendant la partie. Quand la grille est pleine, les cases
+  fausses passent en rouge pour être corrigées.
+- **Chronomètre** avec pause. Il ne compte que le temps réellement joué (il s'arrête quand
+  l'appli passe en arrière-plan).
+- **Victoire** : les chiffres sautent de joie, un message défile, feux d'artifice et fanfare.
+- **Classement** : meilleur temps de chaque joueur, par niveau.
+- **Historique** personnel : date de début, niveau, statut (terminée avec le temps, abandonnée ou
+  en cours), erreurs et bonus utilisés. Les parties en cours peuvent être reprises.
+- **Administration** : ajout de joueurs (e-mail et mot de passe), modification, désactivation,
+  e-mail de réinitialisation du mot de passe, et vue de toutes les parties.
+- **Mode sombre** (automatique, clair ou sombre) et **sons** désactivables.
+- **Hors ligne** : les sauvegardes faites sans réseau sont envoyées automatiquement au retour de la
+  connexion.
 
-Chaque partie enregistrée contient la date de début, le joueur, le niveau et le statut :
-**Terminée** (avec le temps de résolution), **Abandonnée** ou **En cours**.
+## Architecture
 
-## Démarrage rapide
+- `public/` : page, styles, icônes, manifeste PWA et service worker
+- `src/` : code de l'appli, regroupé par esbuild dans `public/build/app.js`
+  - `app.js` : interface (écrans, jeu, admin)
+  - `firebase.js` : connexion et accès à Firestore
+  - `sudoku.js` : générateur et solveur
+  - `config.js` : configuration Firebase et UID de l'administrateur principal
+- `firestore.rules` : règles de sécurité Firestore
+- `vercel.json` : build et hébergement Vercel
 
-Node.js **22.13 ou plus récent** est nécessaire (la base SQLite intégrée à Node est utilisée).
+### Données Firestore
+
+- `players/{email}` : fiche d'un joueur autorisé (`name`, `isAdmin`, `active`, `uid`). Seul un
+  administrateur peut en créer. Un compte de connexion sans fiche ne peut **rien** lire ni écrire.
+- `games/{id}` : une partie (`uid`, `playerName`, `level`, `status`, grilles, `elapsedSeconds`,
+  `hintsLeft`, `errors`, `startedAt`, `finishedAt`).
+
+## Mise en place (déjà faite)
+
+1. Projet Firebase `sudoku-tam` : Authentication avec le fournisseur **E-mail/Mot de passe**,
+   et base **Firestore**.
+2. **Règles de sécurité** : copier le contenu de `firestore.rules` dans la console Firebase
+   (*Firestore Database → Règles*), puis cliquer sur **Publier**. À refaire à chaque modification
+   de ce fichier.
+3. Vercel importe le dépôt GitHub. Chaque push sur `main` met le site en ligne, et chaque autre
+   branche donne un lien d'aperçu.
+
+Au premier lancement, l'administrateur principal (UID défini dans `src/config.js` et
+`firestore.rules`) choisit son nom de joueur. Il peut ensuite ajouter les joueurs depuis
+**Menu → Administration**.
+
+## Développement local
+
+En local (`localhost`), l'appli utilise les **émulateurs Firebase** (Java requis) et ne touche
+pas aux vraies données.
 
 ```bash
 npm install
-ADMIN_EMAIL=moi@exemple.fr ADMIN_PASSWORD=motdepasse ADMIN_NAME="Mon nom" npm start
+npm run emulators         # terminal 1 : émulateurs Auth + Firestore
+npm run dev               # terminal 2 : compile src/ en continu
+npx serve -l 5173 public  # terminal 3 : sert l'appli sur http://localhost:5173
 ```
 
-Ouvrez ensuite http://localhost:3000. Au premier démarrage, le compte administrateur est créé
-avec `ADMIN_EMAIL` et `ADMIN_PASSWORD`. Connectez-vous avec, puis allez dans **Menu →
-Administration** pour créer les comptes des joueurs.
-
-Vous pouvez aussi créer des comptes en ligne de commande :
+Tests :
 
 ```bash
-npm run create-user -- joueur@exemple.fr sonmotdepasse "Prénom"
-npm run create-user -- --admin admin@exemple.fr motdepasse "Admin"
+npm test             # générateur de grilles
+npm run test:rules   # règles de sécurité Firestore (dans l'émulateur)
 ```
-
-## Variables d'environnement
-
-| Variable | Rôle | Défaut |
-| --- | --- | --- |
-| `PORT` | Port HTTP | `3000` |
-| `DB_PATH` | Fichier SQLite | `data/sudoku.db` |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | Compte admin créé si la base est vide | — |
-| `SESSION_SECRET` | Clé de signature des sessions | générée et stockée en base |
-
-## Installer l'application sur le téléphone
-
-L'application doit être servie en **HTTPS**, ce que tous les hébergeurs ci-dessous fournissent.
-
-- **Android (Chrome)** : Menu → *Installer l'application*, ou utilisez le bouton
-  *Installer l'application* du menu d'accueil.
-- **iPhone (Safari)** : bouton *Partager* → *Sur l'écran d'accueil*.
-
-## Mise en ligne
-
-Le serveur est une application Node unique qui stocke tout dans un fichier SQLite. Il faut donc un
-hébergement avec un **disque persistant**.
-
-- **Docker** (VPS, NAS…) :
-  ```bash
-  docker build -t sudoku-tam .
-  docker run -d -p 3000:3000 -v sudoku-data:/data \
-    -e ADMIN_EMAIL=moi@exemple.fr -e ADMIN_PASSWORD=motdepasse sudoku-tam
-  ```
-- **Railway / Render / Fly.io** : déployez ce dépôt avec la commande `npm start`, attachez un volume
-  persistant (par exemple monté sur `/data`) et définissez `DB_PATH=/data/sudoku.db` ainsi que les
-  variables `ADMIN_*`.
-
-> Les hébergements « serverless » sans disque (Netlify Functions, Vercel) ne conviennent pas tels
-> quels, car le fichier SQLite y serait perdu.
-
-## Développement
-
-```bash
-npm run dev   # redémarre automatiquement le serveur à chaque modification
-npm test      # tests du générateur et de l'API
-```
-
-Structure :
-
-- `server/sudoku.js` : générateur et solveur
-- `server/index.js` : API REST et fichiers statiques
-- `server/auth.js` : mots de passe (scrypt) et sessions (cookie signé)
-- `server/db.js` : schéma SQLite
-- `public/` : interface (HTML/CSS/JS sans framework), manifeste PWA, service worker et icônes

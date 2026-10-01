@@ -1,14 +1,13 @@
 'use strict';
 
 // Service worker : met en cache l'interface pour un démarrage rapide.
-// Les appels /api passent toujours par le réseau (parties sauvegardées sur le serveur).
-const CACHE = 'sudoku-v1';
+// Les échanges avec Firebase (autres domaines) ne passent pas par ce cache.
+const CACHE = 'sudoku-v2';
 const SHELL = [
   '/',
   '/index.html',
   '/css/style.css',
-  '/js/app.js',
-  '/js/fireworks.js',
+  '/build/app.js',
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-192.png',
@@ -37,7 +36,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/api/')) return;
+  if (req.method !== 'GET' || url.origin !== location.origin) return;
 
   // Réseau d'abord (pour recevoir les mises à jour), cache en secours.
   event.respondWith(

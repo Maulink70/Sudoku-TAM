@@ -1,0 +1,99 @@
+rules_version = '2';
+
+// Règles de sécurité Firestore du Sudoku.
+// À coller dans la console Firebase : Firestore Database → Règles → Publier.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Administrateur principal (UID du compte Firebase Authentication).
+    function isSuperAdmin() {
+      return request.auth.uid == '7ywYHqyVTNSvMPU3zAJ2ktMpjyi2';
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email is string;
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function myPlayerPath() {
+      return /databases/$(database)/documents/players/$(myEmail());
+    }
+
+    // Joueur autorisé : l'administrateur lui a créé une fiche active.
+    function isActivePlayer() {
+      return isSignedIn() && exists(myPlayerPath()) && get(myPlayerPath()).data.active == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (isSuperAdmin() || (isActivePlayer() && get(myPlayerPath()).data.isAdmin == true));
+    }
+
+    function isGrid(s) {
+      return s is string && s.size() == 81 && s.matches('^[0-9]+$');
+    }
+
+    // Fiches joueurs, identifiées par l'adresse e-mail (en minuscules).
+    match /players/{email} {
+      allow read: if isSignedIn() && (email == myEmail() || isAdmin());
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isSignedIn()
+          && email == myEmail()
+          && resource.data.active == true
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'lastLoginAt', 'theme'])
+          && request.resource.data.uid == request.auth.uid
+          && (!('theme' in request.resource.data)
+            || request.resource.data.theme in ['auto', 'clair', 'nuit', 'noir', 'papier']));
+    }
+
+    // Parties.
+    match /games/{gameId} {
+      // Sa propre partie ; l'admin voit tout ; les parties terminées
+      // sont visibles des joueurs pour le classement.
+      allow read: if isSignedIn()
+        && (resource.data.uid == request.auth.uid
+          || isAdmin()
+          || (resource.data.status == 'terminee' && isActivePlayer()));
+
+      allow create: if isActivePlayer()
+        && request.resource.data.keys().hasOnly([
+          'uid', 'playerName', 'level', 'status', 'puzzle', 'solution', 'board', 'notes',
+          'hints', 'hintsLeft', 'errors', 'elapsedSeconds', 'startedAt', 'updatedAt', 'finishedAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.level in ['facile', 'moyen', 'difficile', 'extreme']
+        && request.resource.data.status == 'en_cours'
+        && isGrid(request.resource.data.puzzle)
+        && isGrid(request.resource.data.solution)
+        && request.resource.data.board == request.resource.data.puzzle
+        && request.resource.data.hintsLeft == 10
+        && request.resource.data.elapsedSeconds == 0
+        && request.resource.data.errors == 0
+        && request.resource.data.startedAt == request.time;
+
+      allow update: if isActivePlayer()
+        && resource.data.uid == request.auth.uid
+        && resource.data.status == 'en_cours'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'board', 'notes', 'hints', 'hintsLeft', 'errors', 'elapsedSeconds', 'status',
+          'updatedAt', 'finishedAt'])
+        && isGrid(request.resource.data.board)
+        && request.resource.data.hintsLeft is int
+        && request.resource.data.hintsLeft >= 0
+        && request.resource.data.hintsLeft <= resource.data.hintsLeft
+        && request.resource.data.elapsedSeconds is int
+        && request.resource.data.elapsedSeconds >= resource.data.elapsedSeconds
+        && request.resource.data.errors >= resource.data.errors
+        && (request.resource.data.status == 'en_cours'
+          || request.resource.data.status == 'abandonnee'
+          || (request.resource.data.status == 'terminee'
+            && request.resource.data.board == resource.data.solution));
+
+      // Un joueur peut supprimer ses propres parties ; l'admin, toutes.
+      allow delete: if isAdmin() || (isActivePlayer() && resource.data.uid == request.auth.uid);
+    }
+  }
+}

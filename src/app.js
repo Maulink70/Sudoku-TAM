@@ -302,7 +302,7 @@ function renderLogin() {
         <span></span><span class="sel">5</span><span>9</span>
         <span>7</span><span></span><span>3</span>
       </div>
-      <h1>Sudoku</h1>
+      <h1>SudoTam</h1>
       <p class="sub">Connectez-vous pour jouer</p>
       <label class="field">E-mail
         <input type="email" name="email" required autocomplete="username" inputmode="email" />
@@ -382,7 +382,7 @@ async function renderHome() {
   const showInstall = !isStandalone() && (installPrompt || isIos());
 
   $app.innerHTML = `
-    <div class="topbar"><span class="spacer"></span><h1>Sudoku</h1><span class="spacer"></span></div>
+    <div class="topbar"><span class="spacer"></span><h1>SudoTam</h1><span class="spacer"></span></div>
     <div class="hello">
       <div class="muted">Bonjour</div>
       <h2>${esc(me.name)} 👋</h2>
@@ -566,7 +566,7 @@ async function renderGame(id) {
         <button class="icon-btn" id="g-back" aria-label="Retour">${ICONS.back}</button>
         <span class="spacer"></span>
         <span class="spacer"></span>
-        <h1>Sudoku</h1>
+        <h1>SudoTam</h1>
         <button class="icon-btn" id="g-theme" aria-label="Mode clair ou sombre">${THEMES[effectiveTheme()].dark ? ICONS.sun : ICONS.moon}</button>
         <button class="icon-btn" id="g-sound" aria-label="Sons">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</button>
         <button class="icon-btn" id="g-abandon" aria-label="Abandonner" title="Abandonner">${ICONS.flag}</button>

@@ -1,4 +1,4 @@
-# Sudoku-TAM
+# SudoTam
 
 Sudoku classique en ligne, **installable sur smartphone** (PWA), avec comptes joueurs et
 sauvegarde des parties dans **Firebase**. L'appli est hébergée sur **Vercel** :

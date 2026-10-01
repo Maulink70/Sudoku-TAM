@@ -44,8 +44,10 @@ service cloud.firestore {
         || (isSignedIn()
           && email == myEmail()
           && resource.data.active == true
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'lastLoginAt'])
-          && request.resource.data.uid == request.auth.uid);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'lastLoginAt', 'theme'])
+          && request.resource.data.uid == request.auth.uid
+          && (!('theme' in request.resource.data)
+            || request.resource.data.theme in ['auto', 'clair', 'nuit', 'noir', 'papier']));
     }
 
     // Parties.

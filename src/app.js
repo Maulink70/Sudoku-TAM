@@ -56,7 +56,13 @@ const ICONS = {
   admin: svg(
     '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11h5M19.5 8.5v5"/>',
   ),
-  theme: svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
+  theme: svg(
+    '<circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
+  ),
+  moon: svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
+  sun: svg(
+    '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/>',
+  ),
   key: svg('<circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8L20 3"/><path d="M17 6l3 3"/>'),
   trash: svg(
     '<path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v5.5M14 11v5.5"/>',
@@ -151,31 +157,66 @@ function openDialog({ title, body = '', ok = 'OK', cancel = 'Annuler', danger = 
 // ------------------------------------------------------------------ thème
 
 const THEME_KEY = 'sudoku-theme';
-const THEMES = { auto: 'Automatique', light: 'Clair', dark: 'Sombre' };
+const THEMES = {
+  auto: { label: 'Automatique' },
+  clair: { label: 'Clair', dark: false, color: '#ffffff' },
+  nuit: { label: 'Bleu nuit', dark: true, color: '#121821' },
+  noir: { label: 'Noir', dark: true, color: '#000000' },
+  papier: { label: 'Papier', dark: false, color: '#f6efe1' },
+};
+const LEGACY_THEMES = { light: 'clair', dark: 'nuit' };
 
-function getTheme() {
+function readStore(key, fallback) {
   try {
-    return localStorage.getItem(THEME_KEY) || 'auto';
+    return localStorage.getItem(key) || fallback;
   } catch {
-    return 'auto';
+    return fallback;
   }
 }
+
+function writeStore(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* stockage indisponible */
+  }
+}
+
+function getTheme() {
+  const t = readStore(THEME_KEY, 'auto');
+  return THEMES[t] ? t : LEGACY_THEMES[t] || 'auto';
+}
+
+const systemIsDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
+
+// Thème réellement affiché (« auto » est résolu selon le téléphone).
+const effectiveTheme = (theme = getTheme()) =>
+  theme === 'auto' ? (systemIsDark() ? 'nuit' : 'clair') : theme;
 
 function applyTheme(theme = getTheme()) {
   const root = document.documentElement;
   if (theme === 'auto') delete root.dataset.theme;
   else root.dataset.theme = theme;
-  const dark = theme === 'dark' || (theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-  document.querySelector('meta[name="theme-color"]').content = dark ? '#121821' : '#ffffff';
+  document.querySelector('meta[name="theme-color"]').content = THEMES[effectiveTheme(theme)].color;
+  const btn = document.getElementById('g-theme');
+  if (btn) btn.innerHTML = THEMES[effectiveTheme(theme)].dark ? ICONS.sun : ICONS.moon;
 }
 
-function setTheme(theme) {
-  try {
-    localStorage.setItem(THEME_KEY, theme);
-  } catch {
-    /* ignoré */
-  }
+// Change le thème, le mémorise sur l'appareil et sur le compte du joueur.
+function setTheme(theme, { sync = true } = {}) {
+  if (!THEMES[theme]) return;
+  writeStore(THEME_KEY, theme);
+  const eff = effectiveTheme(theme);
+  writeStore(THEMES[eff].dark ? 'sudoku-last-dark' : 'sudoku-last-light', eff);
   applyTheme(theme);
+  if (sync && authUser) fb.saveMyTheme(authUser, theme).catch(() => {});
+}
+
+// Icône 🌙/☀️ du jeu : bascule entre le dernier thème clair et le dernier thème sombre utilisés.
+function toggleDarkLight() {
+  const goingDark = !THEMES[effectiveTheme()].dark;
+  const next = goingDark ? readStore('sudoku-last-dark', 'nuit') : readStore('sudoku-last-light', 'clair');
+  setTheme(THEMES[next] ? next : goingDark ? 'nuit' : 'clair');
 }
 
 applyTheme();
@@ -243,6 +284,8 @@ fb.onUserChanged(async (user) => {
       isAdmin: player.isAdmin || fb.isSuperAdmin(user),
     };
     fb.touchPlayer(user).catch(() => {});
+    if (player.theme && THEMES[player.theme] && player.theme !== getTheme())
+      setTheme(player.theme, { sync: false });
     if (!location.hash || location.hash === '#/login') history.replaceState(null, '', '#/');
     route();
   } catch (err) {
@@ -374,7 +417,15 @@ async function renderHome() {
       <button id="m-history">${ICONS.history}Mes parties<span class="chev">${ICONS.chev}</span></button>
       <button id="m-ranking">${ICONS.trophy}Classement<span class="chev">${ICONS.chev}</span></button>
       ${me.isAdmin ? `<button id="m-admin">${ICONS.admin}Administration<span class="chev">${ICONS.chev}</span></button>` : ''}
-      <button id="m-theme">${ICONS.theme}Thème<span class="value" id="m-theme-value">${THEMES[getTheme()]}</span></button>
+      <label class="menu-row" for="m-theme">${ICONS.theme}Thème
+        <select id="m-theme" class="menu-select">
+          ${Object.entries(THEMES)
+            .map(
+              ([id, t]) => `<option value="${id}" ${id === getTheme() ? 'selected' : ''}>${t.label}</option>`,
+            )
+            .join('')}
+        </select>
+      </label>
       <button id="m-sound"><span id="m-sound-icon">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</span>Sons<span class="value" id="m-sound-value">${sound.isMuted() ? 'Coupés' : 'Activés'}</span></button>
       <button id="m-install" ${showInstall ? '' : 'hidden'}>${ICONS.install}Installer l’application<span class="chev">${ICONS.chev}</span></button>
       <button id="m-password">${ICONS.key}Changer mon mot de passe<span class="chev">${ICONS.chev}</span></button>
@@ -388,12 +439,7 @@ async function renderHome() {
   document.getElementById('m-history').onclick = () => go('#/historique');
   document.getElementById('m-ranking').onclick = () => go('#/classement');
   if (me.isAdmin) document.getElementById('m-admin').onclick = () => go('#/admin');
-  document.getElementById('m-theme').onclick = () => {
-    const order = Object.keys(THEMES);
-    const next = order[(order.indexOf(getTheme()) + 1) % order.length];
-    setTheme(next);
-    document.getElementById('m-theme-value').textContent = THEMES[next];
-  };
+  document.getElementById('m-theme').onchange = (e) => setTheme(e.target.value);
   document.getElementById('m-sound').onclick = () => {
     sound.setMuted(!sound.isMuted());
     document.getElementById('m-sound-icon').innerHTML = sound.isMuted() ? ICONS.soundOff : ICONS.soundOn;
@@ -519,7 +565,9 @@ async function renderGame(id) {
       <div class="topbar">
         <button class="icon-btn" id="g-back" aria-label="Retour">${ICONS.back}</button>
         <span class="spacer"></span>
+        <span class="spacer"></span>
         <h1>Sudoku</h1>
+        <button class="icon-btn" id="g-theme" aria-label="Mode clair ou sombre">${THEMES[effectiveTheme()].dark ? ICONS.sun : ICONS.moon}</button>
         <button class="icon-btn" id="g-sound" aria-label="Sons">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</button>
         <button class="icon-btn" id="g-abandon" aria-label="Abandonner" title="Abandonner">${ICONS.flag}</button>
       </div>
@@ -575,6 +623,7 @@ async function renderGame(id) {
     e.currentTarget.innerHTML = sound.isMuted() ? ICONS.soundOff : ICONS.soundOn;
     toast(sound.isMuted() ? 'Sons coupés' : 'Sons activés', 1200);
   };
+  document.getElementById('g-theme').onclick = toggleDarkLight;
   document.getElementById('g-abandon').onclick = abandon;
   document.getElementById('g-pause').onclick = () => setPaused(!G.paused);
   document.getElementById('g-resume').onclick = () => setPaused(false);

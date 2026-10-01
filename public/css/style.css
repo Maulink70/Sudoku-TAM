@@ -44,9 +44,9 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Thème sombre : automatique (réglage du téléphone) ou forcé depuis le menu. */
+/* Thèmes. Sans attribut data-theme (« Automatique »), le thème suit le réglage du téléphone. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
+  :root:not([data-theme]) {
     color-scheme: dark;
     --bg: #121821;
     --card: #1a222d;
@@ -81,11 +81,6 @@
     --key-border: #354457;
     --key-edge: #0d131b;
     --key-shadow: rgba(0, 0, 0, 0.45);
-    --key-top: #2c3949;
-    --key-bottom: #222d3b;
-    --key-border: #354457;
-    --key-edge: #0d131b;
-    --key-shadow: rgba(0, 0, 0, 0.45);
     --lvl-facile: #4fc98f;
     --lvl-moyen: #7aa2ff;
     --lvl-difficile: #f2a54a;
@@ -94,7 +89,7 @@
   }
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='nuit'] {
   color-scheme: dark;
   --bg: #121821;
   --card: #1a222d;
@@ -124,11 +119,88 @@
   --badge-off: #3a4554;
   --overlay: rgba(18, 24, 33, 0.6);
   --toast: #e5ebf3;
+  --key-top: #2c3949;
+  --key-bottom: #222d3b;
+  --key-border: #354457;
+  --key-edge: #0d131b;
+  --key-shadow: rgba(0, 0, 0, 0.45);
   --lvl-facile: #4fc98f;
   --lvl-moyen: #7aa2ff;
   --lvl-difficile: #f2a54a;
   --lvl-extreme: #ff7088;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='noir'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --card: #0e0e10;
+  --card-glass: rgba(14, 14, 16, 0.96);
+  --surface: #18181b;
+  --border: #26262a;
+  --border-soft: #1c1c1f;
+  --text: #ececf1;
+  --muted: #8a8a94;
+  --line-thin: #2a2a2f;
+  --line-thick: #d4d4dc;
+  --blue: #6f9bff;
+  --blue-pad: #86abff;
+  --blue-soft: #16213a;
+  --hint: #b896ff;
+  --cell-hl: #1d2836;
+  --cell-same: #2a3d57;
+  --cell-sel: #2a4a7a;
+  --error: #ff7d8c;
+  --error-bg: #4a2430;
+  --success: #4fc98f;
+  --success-bg: #183427;
+  --danger: #ff8a98;
+  --danger-bg: #3d2028;
+  --neutral: #9aa5b8;
+  --neutral-bg: #1f1f23;
+  --badge-off: #333338;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --toast: #e5ebf3;
+  --key-top: #26262b;
+  --key-bottom: #1b1b1f;
+  --key-border: #323238;
+  --key-edge: #000000;
+  --key-shadow: rgba(0, 0, 0, 0.45);
+  --lvl-facile: #4fc98f;
+  --lvl-moyen: #7aa2ff;
+  --lvl-difficile: #f2a54a;
+  --lvl-extreme: #ff7088;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme='papier'] {
+  color-scheme: light;
+  --bg: #f6efe1;
+  --card: #fbf6ea;
+  --card-glass: rgba(251, 246, 234, 0.96);
+  --surface: #efe5d1;
+  --border: #e2d5bb;
+  --border-soft: #ebe0ca;
+  --text: #4a3a28;
+  --muted: #9a8a70;
+  --line-thin: #d6c7a9;
+  --line-thick: #5a4630;
+  --blue: #b0592a;
+  --blue-pad: #a3561f;
+  --blue-soft: #f1e2c8;
+  --hint: #7a4fc9;
+  --cell-sel: #f0d49a;
+  --error-bg: #f5d3cc;
+  --neutral-bg: #ece2cf;
+  --badge-off: #d3c4a6;
+  --overlay: rgba(246, 239, 225, 0.6);
+  --toast: #4a3a28;
+  --key-top: #fffaf0;
+  --key-bottom: #f2e7d2;
+  --key-border: #e0d1b3;
+  --key-edge: #c9b48d;
+  --key-shadow: rgba(90, 70, 48, 0.2);
+  --lvl-moyen: #a3561f;
 }
 
 * {
@@ -1428,4 +1500,35 @@ table.games tr:last-child td {
 
 .summary .card {
   padding: 12px 4px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  padding: 10px 12px 10px 16px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.menu-row svg {
+  width: 22px;
+  height: 22px;
+  color: var(--blue);
+}
+
+.menu-select {
+  margin-left: auto;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  max-width: 60%;
+}
+
+.menu-list .menu-row + button {
+  border-top: 1px solid var(--border-soft);
 }

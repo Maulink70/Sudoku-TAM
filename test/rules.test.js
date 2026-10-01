@@ -88,6 +88,8 @@ test('règles Firestore', async (t) => {
       updateDoc(doc(alice, 'players/alice@test.fr'), { uid: 'alice', lastLoginAt: serverTimestamp() }),
     );
     await assertFails(updateDoc(doc(alice, 'players/alice@test.fr'), { isAdmin: true }));
+    await assertSucceeds(updateDoc(doc(alice, 'players/alice@test.fr'), { uid: 'alice', theme: 'noir' }));
+    await assertFails(updateDoc(doc(alice, 'players/alice@test.fr'), { uid: 'alice', theme: 'rose' }));
     await assertFails(updateDoc(doc(alice, 'players/alice@test.fr'), { uid: 'bob' }));
   });
 

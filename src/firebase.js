@@ -91,6 +91,7 @@ function playerFromSnap(snap) {
     isAdmin: !!d.isAdmin,
     active: d.active !== false,
     uid: d.uid || null,
+    theme: d.theme || null,
     createdAt: toDate(d.createdAt),
     lastLoginAt: toDate(d.lastLoginAt),
   };
@@ -107,6 +108,11 @@ export function touchPlayer(user) {
     uid: user.uid,
     lastLoginAt: serverTimestamp(),
   });
+}
+
+// Thème d'affichage choisi par le joueur (retrouvé sur tous ses appareils).
+export function saveMyTheme(user, theme) {
+  return updateDoc(doc(db, 'players', normEmail(user.email)), { uid: user.uid, theme });
 }
 
 // Premier démarrage : l'administrateur principal crée sa propre fiche.

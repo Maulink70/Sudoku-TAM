@@ -28,6 +28,11 @@
   --badge-off: #cfd6e1;
   --overlay: rgba(255, 255, 255, 0.55);
   --toast: #26354a;
+  --key-top: #ffffff;
+  --key-bottom: #edf2fa;
+  --key-border: #d5dfec;
+  --key-edge: #b7c6dc;
+  --key-shadow: rgba(52, 72, 97, 0.18);
   --lvl-facile: #2e9e6a;
   --lvl-moyen: #3d6bce;
   --lvl-difficile: #e08a1e;
@@ -51,8 +56,8 @@
     --border-soft: #252f3c;
     --text: #dfe6f0;
     --muted: #8592a6;
-    --line-thin: #34404f;
-    --line-thick: #9fb0c8;
+    --line-thin: #2f3a48;
+    --line-thick: #c9d5e6;
     --blue: #6f9bff;
     --blue-pad: #86abff;
     --blue-soft: #1f2d45;
@@ -71,6 +76,16 @@
     --badge-off: #3a4554;
     --overlay: rgba(18, 24, 33, 0.6);
     --toast: #e5ebf3;
+    --key-top: #2c3949;
+    --key-bottom: #222d3b;
+    --key-border: #354457;
+    --key-edge: #0d131b;
+    --key-shadow: rgba(0, 0, 0, 0.45);
+    --key-top: #2c3949;
+    --key-bottom: #222d3b;
+    --key-border: #354457;
+    --key-edge: #0d131b;
+    --key-shadow: rgba(0, 0, 0, 0.45);
     --lvl-facile: #4fc98f;
     --lvl-moyen: #7aa2ff;
     --lvl-difficile: #f2a54a;
@@ -89,8 +104,8 @@
   --border-soft: #252f3c;
   --text: #dfe6f0;
   --muted: #8592a6;
-  --line-thin: #34404f;
-  --line-thick: #9fb0c8;
+  --line-thin: #2f3a48;
+  --line-thick: #c9d5e6;
   --blue: #6f9bff;
   --blue-pad: #86abff;
   --blue-soft: #1f2d45;
@@ -158,7 +173,7 @@ button {
   min-height: 100dvh;
   max-width: 560px;
   margin: 0 auto;
-  padding: calc(var(--safe-top) + 8px) 16px calc(var(--safe-bottom) + 12px);
+  padding: calc(var(--safe-top) + 6px) 10px calc(var(--safe-bottom) + 10px);
   display: flex;
   flex-direction: column;
 }
@@ -529,11 +544,11 @@ button {
 }
 
 .stats {
-  margin-top: auto;
+  margin-top: 4px;
   display: grid;
   grid-template-columns: 1.3fr 1fr 1fr auto;
   align-items: center;
-  padding: 6px 2px 10px;
+  padding: 4px 4px 8px;
   font-size: 14px;
 }
 
@@ -579,8 +594,7 @@ button {
 
 .board-wrap {
   position: relative;
-  width: min(100%, calc(100dvh - 330px - var(--safe-top) - var(--safe-bottom)));
-  min-width: 260px;
+  width: 100%;
   margin: 0 auto;
   container-type: inline-size;
 }
@@ -590,7 +604,9 @@ button {
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(9, 1fr);
   aspect-ratio: 1;
-  border: 2px solid var(--line-thick);
+  border: 2.5px solid var(--line-thick);
+  border-radius: 6px;
+  overflow: hidden;
   background: var(--card);
 }
 
@@ -600,7 +616,7 @@ button {
   place-items: center;
   border-right: 1px solid var(--line-thin);
   border-bottom: 1px solid var(--line-thin);
-  font-size: 7.2cqw;
+  font-size: 8.4cqw;
   font-weight: 400;
   line-height: 1;
   color: var(--text);
@@ -622,14 +638,6 @@ button {
 
 .cell.bb {
   border-bottom: 2px solid var(--line-thick);
-}
-
-.cell.hl {
-  background: var(--cell-hl);
-}
-
-.cell.same {
-  background: var(--cell-same);
 }
 
 .cell.sel {
@@ -718,11 +726,6 @@ button {
   place-items: center;
 }
 
-.notes span.match {
-  color: var(--blue);
-  font-weight: 700;
-}
-
 .board-wrap.paused .board .cell {
   color: transparent !important;
 }
@@ -775,7 +778,7 @@ button {
 .tools {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  margin: 16px 0 6px;
+  margin: 12px 0 4px;
 }
 
 .tool {
@@ -850,28 +853,40 @@ button {
 .pad {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  margin-bottom: auto;
-  padding: 6px 0 4px;
+  gap: 5px;
+  padding: 4px 0 10px;
 }
 
+/* Touches en relief : dégradé, tranche colorée en dessous, s'enfoncent à l'appui. */
 .pad button {
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--key-border);
+  background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
   color: var(--blue-pad);
-  font-size: clamp(34px, 10.5vw, 52px);
-  font-weight: 300;
-  padding: 6px 0 2px;
-  border-radius: 12px;
+  font-size: clamp(26px, 8.2vw, 40px);
+  font-weight: 500;
+  padding: 10px 0 8px;
+  border-radius: 11px;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
+  box-shadow:
+    0 4px 0 var(--key-edge),
+    0 6px 10px var(--key-shadow);
+  transform: translateY(0);
+  transition:
+    transform 0.06s,
+    box-shadow 0.06s,
+    opacity 0.2s;
 }
 
 .pad button:active {
-  background: var(--blue-soft);
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 var(--key-edge),
+    0 1px 3px var(--key-shadow);
 }
 
 .pad button.done {
-  opacity: 0.25;
+  opacity: 0.35;
 }
 
 .pad.notes-mode button {
@@ -889,8 +904,8 @@ button {
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   margin-top: 8px;
 }
 
@@ -1263,12 +1278,6 @@ table.games tr:last-child td {
   }
 }
 
-@media (min-height: 900px) {
-  .board-wrap {
-    width: min(100%, 520px);
-  }
-}
-
 /* ------------------------------------------------------------- divers */
 
 .link-btn {
@@ -1391,4 +1400,32 @@ table.games tr:last-child td {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   font-size: 17px;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.icon-btn.small {
+  width: 36px;
+  height: 36px;
+}
+
+.icon-btn.small svg {
+  width: 20px;
+  height: 20px;
+}
+
+.icon-btn.danger {
+  color: var(--danger);
+}
+
+.summary .big {
+  font-size: 22px;
+}
+
+.summary .card {
+  padding: 12px 4px;
 }

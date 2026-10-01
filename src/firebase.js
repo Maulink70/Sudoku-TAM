@@ -235,6 +235,10 @@ export function saveGame(game, extra = {}) {
   });
 }
 
+export function deleteGame(id) {
+  return deleteDoc(doc(db, 'games', id));
+}
+
 export function finishGame(game, status) {
   return saveGame(game, { status, finishedAt: serverTimestamp() });
 }
@@ -275,8 +279,15 @@ export function errorMessage(err) {
     'auth/weak-password': 'Le mot de passe doit faire au moins 6 caractères.',
     'auth/network-request-failed': 'Connexion impossible. Vérifiez votre réseau.',
     'auth/requires-recent-login': 'Reconnectez-vous puis réessayez.',
-    'permission-denied': 'Accès refusé.',
+    'auth/admin-restricted-operation':
+      'La création de comptes est désactivée dans Firebase (Authentication → Paramètres → Actions des utilisateurs).',
+    'auth/operation-not-allowed': 'La connexion par e-mail/mot de passe n’est pas activée dans Firebase.',
+    'auth/quota-exceeded': 'Trop de comptes créés récemment. Réessayez plus tard.',
+    'permission-denied': 'Accès refusé (vérifiez que les règles Firestore sont à jour).',
     unavailable: 'Serveur injoignable. Vérifiez votre réseau.',
   };
-  return map[err?.code] || err?.message || 'Une erreur est survenue.';
+  if (map[err?.code]) return map[err.code];
+  if (err?.code === 'player-exists') return err.message;
+  if (err?.code) return `Une erreur est survenue (${err.code}).`;
+  return err?.message || 'Une erreur est survenue.';
 }

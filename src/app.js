@@ -58,6 +58,9 @@ const ICONS = {
   ),
   theme: svg('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),
   key: svg('<circle cx="8" cy="15" r="4.5"/><path d="M11.2 11.8L20 3"/><path d="M17 6l3 3"/>'),
+  trash: svg(
+    '<path d="M4 7h16"/><path d="M9.5 7V4.5h5V7"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v5.5M14 11v5.5"/>',
+  ),
   logout: svg(
     '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5"/><path d="M5 12h11"/>',
   ),
@@ -608,35 +611,42 @@ function tick() {
 
 const isLocked = (i) => G.game.puzzle[i] !== 0 || G.game.hints.includes(i);
 
+// Cases dont le chiffre apparaît deux fois dans une même ligne, colonne ou bloc.
+function findConflicts(board) {
+  const out = new Set();
+  for (let i = 0; i < 81; i++) {
+    if (!board[i]) continue;
+    for (let j = i + 1; j < 81; j++) {
+      if (board[j] === board[i] && isPeer(i, j)) {
+        out.add(i);
+        out.add(j);
+      }
+    }
+  }
+  return out;
+}
+
 function render() {
   const { board, puzzle, notes, hints } = G.game;
-  const sel = G.sel;
-  const selVal = sel >= 0 ? board[sel] : 0;
+  const conflicts = findConflicts(board);
 
   for (let i = 0; i < 81; i++) {
     const v = board[i];
     const el = G.cells[i];
     const cls = [el.dataset.base];
     if (v && !puzzle[i]) cls.push(hints.includes(i) ? 'hint-cell' : 'user');
-    if (G.errorCells.has(i)) cls.push('wrong');
-    if (sel >= 0) {
-      if (i === sel) cls.push('sel');
-      else if (selVal && v === selVal) cls.push('same');
-      else if (isPeer(i, sel)) cls.push('hl');
-    }
+    if (G.errorCells.has(i) || conflicts.has(i)) cls.push('wrong');
+    if (i === G.sel) cls.push('sel');
     const keep = [...el.classList].filter((c) => c === 'pop' || c === 'hinted');
     el.className = cls.concat(keep).join(' ');
 
-    const key = v ? `v${v}` : notes[i] ? `n${notes[i]}:${selVal}` : '';
+    const key = v ? `v${v}` : notes[i] ? `n${notes[i]}` : '';
     if (key !== G.cellKeys[i]) {
       G.cellKeys[i] = key;
       if (v) el.innerHTML = `<span class="v">${v}</span>`;
       else if (notes[i]) {
         let html = '<div class="notes">';
-        for (let d = 1; d <= 9; d++) {
-          const on = notes[i] & (1 << d);
-          html += `<span class="${on && d === selVal ? 'match' : ''}">${on ? d : ''}</span>`;
-        }
+        for (let d = 1; d <= 9; d++) html += `<span>${notes[i] & (1 << d) ? d : ''}</span>`;
         el.innerHTML = html + '</div>';
       } else el.innerHTML = '';
     }
@@ -941,6 +951,7 @@ async function renderHistory() {
     </div>
     <div class="summary">
       <div class="card"><div class="big">${games.length}</div><div class="small">Parties</div></div>
+      <div class="card"><div class="big" style="color:var(--blue)">${games.filter((g) => g.status === 'en_cours').length}</div><div class="small">En cours</div></div>
       <div class="card"><div class="big" style="color:var(--success)">${won.length}</div><div class="small">Gagnées</div></div>
       <div class="card"><div class="big" style="color:var(--neutral)">${games.filter((g) => g.status === 'abandonnee').length}</div><div class="small">Abandonnées</div></div>
     </div>
@@ -957,6 +968,31 @@ async function renderHistory() {
   $app.querySelectorAll('[data-resume]').forEach((b) => {
     b.onclick = () => go(`#/partie/${b.dataset.resume}`);
   });
+  $app.querySelectorAll('[data-delete]').forEach((b) => {
+    b.onclick = async () => {
+      if (await confirmDeleteGame(games.find((g) => g.id === b.dataset.delete))) renderHistory();
+    };
+  });
+}
+
+// Demande confirmation puis supprime la partie. Renvoie true si elle a été supprimée.
+async function confirmDeleteGame(g) {
+  const ok = await openDialog({
+    title: 'Supprimer cette partie ?',
+    body: `<p>Partie ${levelInfo(g.level).label} du ${fmtDate(g.startedAt)}${g.playerName ? ` (${esc(g.playerName)})` : ''} — ${statusText(g).toLowerCase()}.</p>
+      <p class="hint-text">Elle disparaîtra de l’historique, des statistiques et du classement. Cette action est définitive.</p>`,
+    ok: 'Supprimer',
+    danger: true,
+  });
+  if (!ok) return false;
+  try {
+    await fb.deleteGame(g.id);
+    toast('Partie supprimée');
+    return true;
+  } catch (err) {
+    toast(fb.errorMessage(err));
+    return false;
+  }
 }
 
 function gameItem(g) {
@@ -970,7 +1006,10 @@ function gameItem(g) {
         </div>
         <div class="line2">Début : ${fmtDate(g.startedAt)} · ${plural(g.errors, 'erreur')} · ${MAX_HINTS - g.hintsLeft} bonus</div>
       </div>
-      ${g.status === 'en_cours' ? `<button class="btn btn-primary btn-small" data-resume="${g.id}">Reprendre</button>` : ''}
+      <div class="item-actions">
+        ${g.status === 'en_cours' ? `<button class="btn btn-primary btn-small" data-resume="${g.id}">Reprendre</button>` : ''}
+        <button class="icon-btn small danger" data-delete="${g.id}" aria-label="Supprimer la partie">${ICONS.trash}</button>
+      </div>
     </div>`;
 }
 
@@ -1062,8 +1101,8 @@ function renderAdminPlayers(players, games) {
       <h3 class="card-title">Ajouter un joueur</h3>
       <label class="field">Nom du joueur<input name="name" required maxlength="40" autocomplete="off" /></label>
       <label class="field">E-mail<input type="email" name="email" required autocomplete="off" inputmode="email" /></label>
-      <label class="field">Mot de passe<input type="text" name="password" required minlength="6" autocomplete="off" /></label>
-      <p class="hint-text">Si ce compte existe déjà dans la console Firebase, son mot de passe actuel est conservé.</p>
+      <label class="field">Mot de passe (ignoré si le compte existe déjà dans Firebase)<input type="text" name="password" required minlength="6" autocomplete="off" /></label>
+      <p class="hint-text">Le compte de connexion est créé automatiquement dans Firebase.</p>
       <label class="check"><input type="checkbox" name="isAdmin" /> Administrateur</label>
       <button class="btn btn-primary btn-block" type="submit">Ajouter le joueur</button>
     </form>
@@ -1091,7 +1130,7 @@ function renderAdminPlayers(players, games) {
                 isMe
                   ? ''
                   : `<button class="btn btn-ghost btn-small" data-act="toggle" data-email="${esc(p.email)}">${p.active ? 'Désactiver' : 'Activer'}</button>
-                     <button class="btn btn-danger btn-small" data-act="delete" data-email="${esc(p.email)}">Retirer</button>`
+                     <button class="btn btn-danger btn-small" data-act="delete" data-email="${esc(p.email)}">Retirer l’accès</button>`
               }
             </div>
           </div>`;
@@ -1159,15 +1198,17 @@ async function playerAction(act, p) {
       toast(p.active ? 'Joueur désactivé' : 'Joueur réactivé');
     } else if (act === 'delete') {
       const ok = await openDialog({
-        title: `Retirer ${p.name} ?`,
-        body: `<p>${esc(p.name)} ne pourra plus jouer. Ses parties restent dans l’historique.</p>
-          <p class="hint-text">Le compte de connexion reste dans la console Firebase (Authentication), d’où vous pouvez le supprimer définitivement.</p>`,
-        ok: 'Retirer',
+        title: `Retirer l’accès de ${p.name} ?`,
+        body: `<p>${esc(p.name)} ne pourra plus jouer. Ses parties restent dans l’historique.
+          Vous pourrez lui rendre l’accès en l’ajoutant de nouveau avec le même e-mail.</p>
+          <p class="hint-text">Pour supprimer aussi son compte de connexion : console Firebase → Authentication →
+          Utilisateurs → ⋮ sur sa ligne → Supprimer le compte.</p>`,
+        ok: 'Retirer l’accès',
         danger: true,
       });
       if (!ok) return;
       await fb.deletePlayer(p.email);
-      toast('Joueur retiré');
+      toast('Accès retiré');
     } else if (act === 'games') {
       adminFilters.uid = p.uid;
       adminTab = 'parties';
@@ -1214,7 +1255,7 @@ function renderAdminGames(players, allGames) {
     ${
       games.length
         ? `<div class="table-wrap"><table class="games">
-            <thead><tr><th>Début</th><th>Joueur</th><th>Niveau</th><th>Statut</th><th>Temps</th><th>Erreurs</th><th>Bonus</th></tr></thead>
+            <thead><tr><th>Début</th><th>Joueur</th><th>Niveau</th><th>Statut</th><th>Temps</th><th>Erreurs</th><th>Bonus</th><th></th></tr></thead>
             <tbody>
               ${games
                 .map((g) => {
@@ -1227,6 +1268,7 @@ function renderAdminGames(players, allGames) {
                     <td>${fmtTime(g.elapsedSeconds)}</td>
                     <td>${g.errors}</td>
                     <td>${MAX_HINTS - g.hintsLeft}</td>
+                    <td><button class="icon-btn small danger" data-delete="${g.id}" aria-label="Supprimer la partie">${ICONS.trash}</button></td>
                   </tr>`;
                 })
                 .join('')}
@@ -1242,9 +1284,22 @@ function renderAdminGames(players, allGames) {
     adminFilters.uid = e.target.value;
     renderAdminGames(players, allGames);
   };
+  box.querySelectorAll('[data-delete]').forEach((b) => {
+    b.onclick = async () => {
+      const g = allGames.find((x) => x.id === b.dataset.delete);
+      if (await confirmDeleteGame(g))
+        renderAdminGames(
+          players,
+          allGames.filter((x) => x !== g),
+        );
+    };
+  });
 }
 
 // ---------------------------------------------------------- démarrage
+
+// Active l'état :active des boutons sur iOS (effet d'appui des touches du pavé).
+document.addEventListener('touchstart', () => {}, { passive: true });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

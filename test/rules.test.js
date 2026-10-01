@@ -8,6 +8,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
   collection,
   query,
   where,
@@ -123,6 +124,14 @@ test('règles Firestore', async (t) => {
     await assertFails(getDocs(query(collection(intrus, 'games'), where('status', '==', 'terminee'))));
     await assertSucceeds(getDocs(collection(admin, 'games')));
     await assertSucceeds(getDocs(collection(admin, 'players')));
+  });
+
+  await t.test('suppression de parties', async () => {
+    await assertSucceeds(setDoc(doc(alice, 'games/a9'), newGame('alice')));
+    await assertFails(deleteDoc(doc(bob, 'games/a9')));
+    await assertSucceeds(deleteDoc(doc(alice, 'games/a9')));
+    await assertSucceeds(deleteDoc(doc(admin, 'games/b1')));
+    await assertSucceeds(setDoc(doc(bob, 'games/b1'), newGame('bob')));
   });
 
   await t.test('joueur désactivé bloqué', async () => {

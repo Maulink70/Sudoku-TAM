@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>Sudoku TAM</title>
+    <meta name="description" content="Sudoku classique en ligne : 4 niveaux, bonus, chrono et sauvegarde des parties." />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Sudoku" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script src="/js/fireworks.js" defer></script>
+    <script src="/js/app.js" defer></script>
+  </head>
+  <body>
+    <div id="app">
+      <div class="splash"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Célébration de victoire -->
+    <div id="win" class="win" hidden>
+      <canvas id="fireworks"></canvas>
+      <div class="win-marquee"><span id="win-marquee-text"></span></div>
+      <div class="win-card">
+        <div class="win-trophy">🏆</div>
+        <h2>Grille résolue !</h2>
+        <div class="win-stats" id="win-stats"></div>
+        <div class="win-actions">
+          <button class="btn btn-primary" id="win-new">Nouvelle partie</button>
+          <button class="btn btn-ghost" id="win-home">Accueil</button>
+        </div>
+      </div>
+    </div>
+
+    <dialog id="dialog" class="dialog">
+      <form method="dialog" id="dialog-form">
+        <h3 id="dialog-title"></h3>
+        <div id="dialog-body"></div>
+        <div class="dialog-actions">
+          <button value="cancel" class="btn btn-ghost" id="dialog-cancel" formnovalidate>Annuler</button>
+          <button value="ok" class="btn btn-primary" id="dialog-ok">OK</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

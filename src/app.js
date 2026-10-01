@@ -571,6 +571,7 @@ async function renderGame(id) {
         <button class="icon-btn" id="g-sound" aria-label="Sons">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</button>
         <button class="icon-btn" id="g-abandon" aria-label="Abandonner" title="Abandonner">${ICONS.flag}</button>
       </div>
+      <div class="game-body">
       <div class="stats">
         <div class="stat"><span class="label">Difficulté</span><span class="value" style="color:${lvl.color}">${lvl.label}</span></div>
         <div class="stat"><span class="label">Bonus</span><span class="value" id="g-hints-stat"></span></div>
@@ -583,6 +584,7 @@ async function renderGame(id) {
           <button class="btn btn-primary" id="g-resume"><span class="btn-ico">${ICONS.play}</span> Reprendre</button>
         </div>
       </div>
+      <div class="side">
       <div class="tools">
         <button class="tool" id="t-undo"><span class="ico">${ICONS.undo}</span>Annuler</button>
         <button class="tool" id="t-erase"><span class="ico">${ICONS.eraser}</span>Effacer</button>
@@ -593,7 +595,11 @@ async function renderGame(id) {
       <div class="pad" id="g-pad">
         ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<button data-d="${d}">${d}</button>`).join('')}
       </div>
+      </div>
+      </div>
     </div>`;
+  // L'écran de jeu peut utiliser toute la largeur (tablettes, paysage).
+  $app.classList.add('wide');
 
   const board = document.getElementById('g-board');
   G.cells = [];
@@ -642,6 +648,7 @@ async function renderGame(id) {
 }
 
 function leaveGame(save = true) {
+  $app.classList.remove('wide');
   if (!G.game) return;
   clearInterval(G.ticker);
   clearTimeout(G.saveTimer);

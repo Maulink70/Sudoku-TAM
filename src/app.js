@@ -417,7 +417,7 @@ async function renderHome() {
           ${
             l.dots
               ? `<span class="dots">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= l.dots ? 'on' : ''}"></i>`).join('')}</span>`
-              : '<span class="level-tag">Une seule case à remplir</span>'
+              : '<span class="level-tag level-emoji">😂😇🤌</span>'
           }
         </button>`,
       ).join('')}

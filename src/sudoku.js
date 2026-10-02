@@ -2,7 +2,7 @@
 // Une grille est un tableau de 81 entiers (0 = case vide), lu ligne par ligne.
 
 export const LEVELS = {
-  pour_mauro: { label: 'Pour Mauro', clues: 80 },
+  pour_mauro: { label: 'Niveau Mauro', clues: 80 },
   tres_facile: { label: 'Très facile', clues: 50 },
   facile: { label: 'Facile', clues: 40 },
   moyen: { label: 'Moyen', clues: 32 },
@@ -198,7 +198,7 @@ export function solvableBySingles(grid) {
 export function generate(level = 'moyen', { timeBudgetMs = 2500, rand = Math.random } = {}) {
   const cfg = LEVELS[level];
   if (!cfg) throw new Error(`Niveau inconnu : ${level}`);
-  // « Pour Mauro » : grille complète à une case près.
+  // « Niveau Mauro » : grille complète à une case près.
   if (level === 'pour_mauro') {
     const solution = randomSolution(rand);
     const puzzle = solution.slice();

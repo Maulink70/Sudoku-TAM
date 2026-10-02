@@ -33,6 +33,8 @@
   --key-border: #d5dfec;
   --key-edge: #b7c6dc;
   --key-shadow: rgba(52, 72, 97, 0.18);
+  --lvl-mauro: #c2489a;
+  --lvl-tres-facile: #1f9a9a;
   --lvl-facile: #2e9e6a;
   --lvl-moyen: #3d6bce;
   --lvl-difficile: #e08a1e;
@@ -81,6 +83,8 @@
     --key-border: #354457;
     --key-edge: #0d131b;
     --key-shadow: rgba(0, 0, 0, 0.45);
+    --lvl-mauro: #ff7ac8;
+    --lvl-tres-facile: #4fd1d1;
     --lvl-facile: #4fc98f;
     --lvl-moyen: #7aa2ff;
     --lvl-difficile: #f2a54a;
@@ -124,6 +128,8 @@
   --key-border: #354457;
   --key-edge: #0d131b;
   --key-shadow: rgba(0, 0, 0, 0.45);
+  --lvl-mauro: #ff7ac8;
+  --lvl-tres-facile: #4fd1d1;
   --lvl-facile: #4fc98f;
   --lvl-moyen: #7aa2ff;
   --lvl-difficile: #f2a54a;
@@ -166,6 +172,8 @@
   --key-border: #323238;
   --key-edge: #000000;
   --key-shadow: rgba(0, 0, 0, 0.45);
+  --lvl-mauro: #ff7ac8;
+  --lvl-tres-facile: #4fd1d1;
   --lvl-facile: #4fc98f;
   --lvl-moyen: #7aa2ff;
   --lvl-difficile: #f2a54a;
@@ -1670,4 +1678,118 @@ table.games tr:last-child td {
 .game .topbar .icon-btn svg {
   width: 60%;
   height: 60%;
+}
+
+/* --------------------------------------------------------- nouveaux niveaux */
+
+.level-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lvl);
+}
+
+.tabs.tabs-levels button {
+  font-size: 12px;
+  padding: 10px 2px;
+}
+
+/* Barre du haut du jeu : retour à gauche, titre centré, icônes à droite. */
+.game .topbar.game-topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px;
+}
+
+.game-topbar h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-topbar .tb-left,
+.game-topbar .tb-right {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.game-topbar .tb-right {
+  justify-content: flex-end;
+}
+
+.game .game-topbar .icon-btn {
+  flex-shrink: 0;
+  width: max(36px, calc(var(--board) * 0.072));
+  height: max(36px, calc(var(--board) * 0.072));
+}
+
+.game .game-topbar .icon-btn svg {
+  width: max(22px, 60%);
+  height: max(22px, 60%);
+}
+
+/* ------------------------------------------------------------- impression */
+
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    height: auto;
+  }
+
+  #app,
+  #win,
+  #toast,
+  #dialog {
+    display: none !important;
+  }
+
+  .print-sheet {
+    display: block;
+    color: #000;
+    font-family: Helvetica, Arial, sans-serif;
+  }
+
+  .print-head {
+    margin-bottom: 8mm;
+  }
+
+  .print-level {
+    font-size: 20pt;
+    font-weight: 700;
+  }
+
+  .print-dates {
+    font-size: 11pt;
+    color: #444;
+    margin-top: 2mm;
+  }
+
+  .print-grid {
+    display: block;
+    width: 170mm;
+    height: 170mm;
+    margin: 0 auto;
+  }
+
+  .print-grid .given {
+    font-weight: 700;
+    fill: #000;
+  }
+
+  .print-grid .mine {
+    font-weight: 400;
+    fill: #8c8c8c;
+  }
 }

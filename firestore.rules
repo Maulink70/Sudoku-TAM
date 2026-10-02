@@ -64,7 +64,7 @@ service cloud.firestore {
           'uid', 'playerName', 'level', 'status', 'puzzle', 'solution', 'board', 'notes',
           'hints', 'hintsLeft', 'errors', 'elapsedSeconds', 'startedAt', 'updatedAt', 'finishedAt'])
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.level in ['facile', 'moyen', 'difficile', 'extreme']
+        && request.resource.data.level in ['pour_mauro', 'tres_facile', 'facile', 'moyen', 'difficile', 'extreme']
         && request.resource.data.status == 'en_cours'
         && isGrid(request.resource.data.puzzle)
         && isGrid(request.resource.data.solution)

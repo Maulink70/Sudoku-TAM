@@ -7,12 +7,16 @@ import { MAX_HINTS } from './config.js';
 const $app = document.getElementById('app');
 
 const LEVELS = [
-  { id: 'facile', label: 'Facile', dots: 1, color: 'var(--lvl-facile)' },
-  { id: 'moyen', label: 'Moyen', dots: 2, color: 'var(--lvl-moyen)' },
-  { id: 'difficile', label: 'Difficile', dots: 3, color: 'var(--lvl-difficile)' },
-  { id: 'extreme', label: 'Extrême', dots: 4, color: 'var(--lvl-extreme)' },
+  { id: 'pour_mauro', label: 'Pour Mauro', dots: 0, color: 'var(--lvl-mauro)', ranked: false },
+  { id: 'tres_facile', label: 'Très facile', dots: 1, color: 'var(--lvl-tres-facile)' },
+  { id: 'facile', label: 'Facile', dots: 2, color: 'var(--lvl-facile)' },
+  { id: 'moyen', label: 'Moyen', dots: 3, color: 'var(--lvl-moyen)' },
+  { id: 'difficile', label: 'Difficile', dots: 4, color: 'var(--lvl-difficile)' },
+  { id: 'extreme', label: 'Extrême', dots: 5, color: 'var(--lvl-extreme)' },
 ];
-const levelInfo = (id) => LEVELS.find((l) => l.id === id) || LEVELS[1];
+// « Pour Mauro » n'entre ni dans le classement ni dans les meilleurs temps.
+const RANKED_LEVELS = LEVELS.filter((l) => l.ranked !== false);
+const levelInfo = (id) => LEVELS.find((l) => l.id === id) || LEVELS.find((l) => l.id === 'moyen');
 
 const STATUS_LABEL = { en_cours: 'En cours', terminee: 'Terminée', abandonnee: 'Abandonnée' };
 
@@ -44,6 +48,9 @@ const ICONS = {
   play: svg('<path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.2-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/>', {
     fill: true,
   }),
+  printer: svg(
+    '<path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/><path d="M17 12h.01"/>',
+  ),
   flag: svg('<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>'),
   soundOn: svg(
     '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/>',
@@ -407,7 +414,11 @@ async function renderHome() {
         (l) => `
         <button class="level-btn" data-level="${l.id}" style="--lvl:${l.color}">
           <span class="name">${l.label}</span>
-          <span class="dots">${[1, 2, 3, 4].map((n) => `<i class="${n <= l.dots ? 'on' : ''}"></i>`).join('')}</span>
+          ${
+            l.dots
+              ? `<span class="dots">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= l.dots ? 'on' : ''}"></i>`).join('')}</span>`
+              : '<span class="level-tag">Une seule case à remplir</span>'
+          }
         </button>`,
       ).join('')}
     </div>
@@ -562,14 +573,17 @@ async function renderGame(id) {
 
   $app.innerHTML = `
     <div class="game">
-      <div class="topbar">
-        <button class="icon-btn" id="g-back" aria-label="Retour">${ICONS.back}</button>
-        <span class="spacer"></span>
-        <span class="spacer"></span>
+      <div class="topbar game-topbar">
+        <div class="tb-left">
+          <button class="icon-btn" id="g-back" aria-label="Retour">${ICONS.back}</button>
+        </div>
         <h1>SudoTam</h1>
-        <button class="icon-btn" id="g-theme" aria-label="Mode clair ou sombre">${THEMES[effectiveTheme()].dark ? ICONS.sun : ICONS.moon}</button>
-        <button class="icon-btn" id="g-sound" aria-label="Sons">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</button>
-        <button class="icon-btn" id="g-abandon" aria-label="Abandonner" title="Abandonner">${ICONS.flag}</button>
+        <div class="tb-right">
+          <button class="icon-btn" id="g-print" aria-label="Imprimer la grille" title="Imprimer">${ICONS.printer}</button>
+          <button class="icon-btn" id="g-theme" aria-label="Mode clair ou sombre">${THEMES[effectiveTheme()].dark ? ICONS.sun : ICONS.moon}</button>
+          <button class="icon-btn" id="g-sound" aria-label="Sons">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</button>
+          <button class="icon-btn" id="g-abandon" aria-label="Abandonner" title="Abandonner">${ICONS.flag}</button>
+        </div>
       </div>
       <div class="game-body">
       <div class="stats">
@@ -630,6 +644,7 @@ async function renderGame(id) {
     toast(sound.isMuted() ? 'Sons coupés' : 'Sons activés', 1200);
   };
   document.getElementById('g-theme').onclick = toggleDarkLight;
+  document.getElementById('g-print').onclick = printGrid;
   document.getElementById('g-abandon').onclick = abandon;
   document.getElementById('g-pause').onclick = () => setPaused(!G.paused);
   document.getElementById('g-resume').onclick = () => setPaused(false);
@@ -934,6 +949,41 @@ async function abandon() {
   go('#/');
 }
 
+// ------------------------------------------------------------ impression
+
+// Remplit la feuille d'impression (grille en SVG, niveau, dates) puis ouvre
+// la fenêtre d'impression du téléphone (imprimante ou « Enregistrer en PDF »).
+function printGrid() {
+  const g = G.game;
+  if (!g) return;
+  const S = 100;
+  let lines = '';
+  for (let k = 0; k <= 9; k++) {
+    const w = k % 3 === 0 ? 5 : 1.5;
+    lines += `<line x1="${k * S}" y1="0" x2="${k * S}" y2="${9 * S}" stroke-width="${w}"/>`;
+    lines += `<line x1="0" y1="${k * S}" x2="${9 * S}" y2="${k * S}" stroke-width="${w}"/>`;
+  }
+  let digits = '';
+  for (let i = 0; i < 81; i++) {
+    const v = g.board[i];
+    if (!v) continue;
+    const given = g.puzzle[i] !== 0;
+    digits += `<text x="${COL(i) * S + S / 2}" y="${ROW(i) * S + S / 2}" class="${given ? 'given' : 'mine'}">${v}</text>`;
+  }
+  const sheet = document.getElementById('print-sheet');
+  sheet.innerHTML = `
+    <div class="print-head">
+      <div class="print-level">Niveau : ${levelInfo(g.level).label}</div>
+      <div class="print-dates">Partie commencée le ${fmtDate(g.startedAt)} · Imprimée le ${fmtDate(new Date())}</div>
+    </div>
+    <svg class="print-grid" viewBox="-3 -3 906 906" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="900" height="900" fill="#fff"/>
+      <g stroke="#000" stroke-linecap="square">${lines}</g>
+      <g font-family="Helvetica, Arial, sans-serif" font-size="62" text-anchor="middle" dominant-baseline="central">${digits}</g>
+    </svg>`;
+  window.print();
+}
+
 // ------------------------------------------------------------ victoire
 
 function win() {
@@ -995,7 +1045,7 @@ async function renderHistory() {
   if (location.hash !== '#/historique') return;
 
   const won = games.filter((g) => g.status === 'terminee');
-  const records = LEVELS.map((l) => {
+  const records = RANKED_LEVELS.map((l) => {
     const times = won.filter((g) => g.level === l.id).map((g) => g.elapsedSeconds);
     return { ...l, best: times.length ? Math.min(...times) : null };
   });
@@ -1079,8 +1129,8 @@ async function renderLeaderboard() {
       <button class="icon-btn" id="r-back" aria-label="Retour">${ICONS.back}</button>
       <h1>Classement</h1><span class="spacer"></span>
     </div>
-    <div class="tabs tabs-4">
-      ${LEVELS.map((l) => `<button data-level="${l.id}" class="${l.id === rankingLevel ? 'active' : ''}">${l.label}</button>`).join('')}
+    <div class="tabs tabs-levels" style="grid-template-columns: repeat(${RANKED_LEVELS.length}, 1fr)">
+      ${RANKED_LEVELS.map((l) => `<button data-level="${l.id}" class="${l.id === rankingLevel ? 'active' : ''}">${l.label}</button>`).join('')}
     </div>
     <div id="r-list"><div class="splash"><div class="spinner"></div></div></div>`;
   document.getElementById('r-back').onclick = () => go('#/');

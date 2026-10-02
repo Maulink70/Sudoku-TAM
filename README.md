@@ -6,7 +6,10 @@ https://sudoku-tam.vercel.app
 
 ## Fonctionnalités
 
-- **4 niveaux** : Facile, Moyen, Difficile, Extrême. Chaque grille a une **solution unique**.
+- **6 niveaux** : Pour Mauro (une seule case à remplir), Très facile, Facile, Moyen, Difficile,
+  Extrême. Chaque grille a une **solution unique**. « Pour Mauro » n'entre pas dans le classement.
+- **Impression** : le bouton 🖨️ du jeu imprime la grille en cours (ou l'enregistre en PDF), avec le
+  niveau, la date de début et la date d'impression.
 - **Jeu tactile** au design inspiré de Sudoku.com : on touche une case, puis un chiffre.
   Outils Annuler, Effacer, Notes, et **10 bonus** par partie (chaque bonus remplit une case au
   hasard ; elle s'affiche en violet et ne peut plus être modifiée).

@@ -1793,3 +1793,8 @@ table.games tr:last-child td {
     fill: #8c8c8c;
   }
 }
+
+.level-tag.level-emoji {
+  font-size: 20px;
+  line-height: 1;
+}

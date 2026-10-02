@@ -7,14 +7,14 @@ import { MAX_HINTS } from './config.js';
 const $app = document.getElementById('app');
 
 const LEVELS = [
-  { id: 'pour_mauro', label: 'Pour Mauro', dots: 0, color: 'var(--lvl-mauro)', ranked: false },
+  { id: 'pour_mauro', label: 'Niveau Mauro', dots: 0, color: 'var(--lvl-mauro)', ranked: false },
   { id: 'tres_facile', label: 'Très facile', dots: 1, color: 'var(--lvl-tres-facile)' },
   { id: 'facile', label: 'Facile', dots: 2, color: 'var(--lvl-facile)' },
   { id: 'moyen', label: 'Moyen', dots: 3, color: 'var(--lvl-moyen)' },
   { id: 'difficile', label: 'Difficile', dots: 4, color: 'var(--lvl-difficile)' },
   { id: 'extreme', label: 'Extrême', dots: 5, color: 'var(--lvl-extreme)' },
 ];
-// « Pour Mauro » n'entre ni dans le classement ni dans les meilleurs temps.
+// « Niveau Mauro » n'entre ni dans le classement ni dans les meilleurs temps.
 const RANKED_LEVELS = LEVELS.filter((l) => l.ranked !== false);
 const levelInfo = (id) => LEVELS.find((l) => l.id === id) || LEVELS.find((l) => l.id === 'moyen');
 
@@ -450,7 +450,7 @@ async function renderHome() {
           ${
             l.dots
               ? `<span class="dots">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= l.dots ? 'on' : ''}"></i>`).join('')}</span>`
-              : '<span class="level-tag level-emoji">😂😇🤌</span>'
+              : '<span class="level-tag level-emoji">😇</span>'
           }
         </button>`,
       ).join('')}

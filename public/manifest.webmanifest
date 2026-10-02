@@ -1,7 +1,7 @@
 {
   "name": "SudoTam",
   "short_name": "SudoTam",
-  "description": "Sudoku classique : 4 niveaux, bonus, chrono et sauvegarde en ligne.",
+  "description": "Sudoku classique : 6 niveaux, bonus, chrono et sauvegarde en ligne.",
   "lang": "fr",
   "start_url": "/",
   "scope": "/",

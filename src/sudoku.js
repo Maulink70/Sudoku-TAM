@@ -2,6 +2,8 @@
 // Une grille est un tableau de 81 entiers (0 = case vide), lu ligne par ligne.
 
 export const LEVELS = {
+  pour_mauro: { label: 'Pour Mauro', clues: 80 },
+  tres_facile: { label: 'Très facile', clues: 50 },
   facile: { label: 'Facile', clues: 40 },
   moyen: { label: 'Moyen', clues: 32 },
   difficile: { label: 'Difficile', clues: 27 },
@@ -196,6 +198,14 @@ export function solvableBySingles(grid) {
 export function generate(level = 'moyen', { timeBudgetMs = 2500, rand = Math.random } = {}) {
   const cfg = LEVELS[level];
   if (!cfg) throw new Error(`Niveau inconnu : ${level}`);
+  // « Pour Mauro » : grille complète à une case près.
+  if (level === 'pour_mauro') {
+    const solution = randomSolution(rand);
+    const puzzle = solution.slice();
+    puzzle[Math.floor(rand() * 81)] = 0;
+    return { puzzle, solution };
+  }
+
   const deadline = Date.now() + timeBudgetMs;
   let best = null;
 
@@ -224,7 +234,11 @@ export function generate(level = 'moyen', { timeBudgetMs = 2500, rand = Math.ran
     const singles = solvableBySingles(puzzle);
     // Les niveaux faciles doivent se résoudre par simple logique ;
     // le niveau extrême doit au contraire exiger des techniques avancées.
-    const styleOk = level === 'facile' || level === 'moyen' ? singles : level === 'extreme' ? !singles : true;
+    const styleOk = ['tres_facile', 'facile', 'moyen'].includes(level)
+      ? singles
+      : level === 'extreme'
+        ? !singles
+        : true;
     const candidate = { puzzle, solution, clues, styleOk };
 
     if (styleOk && clues <= cfg.clues + 1) return { puzzle, solution };

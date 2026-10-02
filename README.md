@@ -23,6 +23,8 @@ https://sudoku-tam.vercel.app
   en cours), erreurs et bonus utilisés. Les parties en cours peuvent être reprises.
 - **Administration** : ajout de joueurs (e-mail et mot de passe), modification, désactivation,
   e-mail de réinitialisation du mot de passe, et vue de toutes les parties.
+- **Taille des chiffres** réglable (Normale, Grande, Très grande) dans le menu ou pendant la partie,
+  mémorisée sur chaque appareil.
 - **Mode sombre** (automatique, clair ou sombre) et **sons** désactivables.
 - **Hors ligne** : les sauvegardes faites sans réseau sont envoyées automatiquement au retour de la
   connexion.

@@ -48,6 +48,9 @@ const ICONS = {
   play: svg('<path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.2-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/>', {
     fill: true,
   }),
+  textSize: svg(
+    '<path d="M2.5 19L8 5l5.5 14"/><path d="M4.6 14h6.8"/><path d="M14.5 19l3.5-8.5 3.5 8.5"/><path d="M15.7 16.2h4.6"/>',
+  ),
   printer: svg(
     '<path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/><path d="M17 12h.01"/>',
   ),
@@ -226,6 +229,36 @@ function toggleDarkLight() {
   setTheme(THEMES[next] ? next : goingDark ? 'nuit' : 'clair');
 }
 
+// --------------------------------------------------- taille des chiffres
+
+// Mémorisée sur l'appareil (la taille idéale dépend de l'écran).
+const DIGIT_KEY = 'sudoku-digit-size';
+const DIGIT_SIZES = { normale: 'Normale', grande: 'Grande', tres_grande: 'Très grande' };
+
+function getDigitSize() {
+  const v = readStore(DIGIT_KEY, 'normale');
+  return DIGIT_SIZES[v] ? v : 'normale';
+}
+
+function applyDigitSize(size = getDigitSize()) {
+  document.documentElement.dataset.digits = size;
+}
+
+function setDigitSize(size) {
+  if (!DIGIT_SIZES[size]) return;
+  writeStore(DIGIT_KEY, size);
+  applyDigitSize(size);
+}
+
+// Icône du jeu : Normale → Grande → Très grande → Normale…
+function cycleDigitSize() {
+  const order = Object.keys(DIGIT_SIZES);
+  const next = order[(order.indexOf(getDigitSize()) + 1) % order.length];
+  setDigitSize(next);
+  toast(`Taille des chiffres : ${DIGIT_SIZES[next]}`, 1400);
+}
+
+applyDigitSize();
 applyTheme();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 
@@ -437,6 +470,16 @@ async function renderHome() {
             .join('')}
         </select>
       </label>
+      <label class="menu-row" for="m-digits">${ICONS.textSize}Taille des chiffres
+        <select id="m-digits" class="menu-select">
+          ${Object.entries(DIGIT_SIZES)
+            .map(
+              ([id, label]) =>
+                `<option value="${id}" ${id === getDigitSize() ? 'selected' : ''}>${label}</option>`,
+            )
+            .join('')}
+        </select>
+      </label>
       <button id="m-sound"><span id="m-sound-icon">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</span>Sons<span class="value" id="m-sound-value">${sound.isMuted() ? 'Coupés' : 'Activés'}</span></button>
       <button id="m-install" ${showInstall ? '' : 'hidden'}>${ICONS.install}Installer l’application<span class="chev">${ICONS.chev}</span></button>
       <button id="m-password">${ICONS.key}Changer mon mot de passe<span class="chev">${ICONS.chev}</span></button>
@@ -451,6 +494,7 @@ async function renderHome() {
   document.getElementById('m-ranking').onclick = () => go('#/classement');
   if (me.isAdmin) document.getElementById('m-admin').onclick = () => go('#/admin');
   document.getElementById('m-theme').onchange = (e) => setTheme(e.target.value);
+  document.getElementById('m-digits').onchange = (e) => setDigitSize(e.target.value);
   document.getElementById('m-sound').onclick = () => {
     sound.setMuted(!sound.isMuted());
     document.getElementById('m-sound-icon').innerHTML = sound.isMuted() ? ICONS.soundOff : ICONS.soundOn;
@@ -579,6 +623,7 @@ async function renderGame(id) {
         </div>
         <h1>SudoTam</h1>
         <div class="tb-right">
+          <button class="icon-btn" id="g-digits" aria-label="Taille des chiffres" title="Taille des chiffres">${ICONS.textSize}</button>
           <button class="icon-btn" id="g-print" aria-label="Imprimer la grille" title="Imprimer">${ICONS.printer}</button>
           <button class="icon-btn" id="g-theme" aria-label="Mode clair ou sombre">${THEMES[effectiveTheme()].dark ? ICONS.sun : ICONS.moon}</button>
           <button class="icon-btn" id="g-sound" aria-label="Sons">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</button>
@@ -645,6 +690,7 @@ async function renderGame(id) {
   };
   document.getElementById('g-theme').onclick = toggleDarkLight;
   document.getElementById('g-print').onclick = printGrid;
+  document.getElementById('g-digits').onclick = cycleDigitSize;
   document.getElementById('g-abandon').onclick = abandon;
   document.getElementById('g-pause').onclick = () => setPaused(!G.paused);
   document.getElementById('g-resume').onclick = () => setPaused(false);

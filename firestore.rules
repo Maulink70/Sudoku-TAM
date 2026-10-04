@@ -62,9 +62,10 @@ service cloud.firestore {
       allow create: if isActivePlayer()
         && request.resource.data.keys().hasOnly([
           'uid', 'playerName', 'level', 'status', 'puzzle', 'solution', 'board', 'notes',
-          'hints', 'hintsLeft', 'errors', 'elapsedSeconds', 'startedAt', 'updatedAt', 'finishedAt'])
+          'hints', 'hintsLeft', 'errors', 'elapsedSeconds', 'startedAt', 'updatedAt', 'finishedAt',
+          'lotId', 'lotIndex'])
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.level in ['pour_mauro', 'tres_facile', 'facile', 'moyen', 'difficile', 'extreme']
+        && request.resource.data.level in ['debutant', 'tres_facile', 'facile', 'moyen', 'difficile', 'extreme']
         && request.resource.data.status == 'en_cours'
         && isGrid(request.resource.data.puzzle)
         && isGrid(request.resource.data.solution)
@@ -93,6 +94,31 @@ service cloud.firestore {
             && request.resource.data.board == resource.data.solution));
 
       // Un joueur peut supprimer ses propres parties ; l'admin, toutes.
+      allow delete: if isAdmin() || (isActivePlayer() && resource.data.uid == request.auth.uid);
+    }
+
+    // Lots de 4 grilles imprimables (une partie n'est créée que lorsqu'on joue une grille).
+    match /lots/{lotId} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+
+      allow create: if isActivePlayer()
+        && request.resource.data.keys().hasOnly(['uid', 'level', 'createdAt', 'puzzles', 'solutions', 'gameIds'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.level in ['debutant', 'tres_facile', 'facile', 'moyen', 'difficile', 'extreme']
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.puzzles is list && request.resource.data.puzzles.size() == 4
+        && request.resource.data.solutions is list && request.resource.data.solutions.size() == 4
+        && request.resource.data.gameIds is list && request.resource.data.gameIds.size() == 4
+        && isGrid(request.resource.data.puzzles[0]) && isGrid(request.resource.data.puzzles[1])
+        && isGrid(request.resource.data.puzzles[2]) && isGrid(request.resource.data.puzzles[3])
+        && isGrid(request.resource.data.solutions[0]) && isGrid(request.resource.data.solutions[1])
+        && isGrid(request.resource.data.solutions[2]) && isGrid(request.resource.data.solutions[3]);
+
+      allow update: if isActivePlayer()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gameIds'])
+        && request.resource.data.gameIds is list && request.resource.data.gameIds.size() == 4;
+
       allow delete: if isAdmin() || (isActivePlayer() && resource.data.uid == request.auth.uid);
     }
   }

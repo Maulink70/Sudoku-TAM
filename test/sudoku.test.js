@@ -24,7 +24,6 @@ for (const level of Object.keys(sudoku.LEVELS)) {
     assert.equal(sudoku.countSolutions(puzzle, 2), 1);
     puzzle.forEach((v, i) => v && assert.equal(v, solution[i]));
     const clues = puzzle.filter(Boolean).length;
-    if (level === 'pour_mauro') assert.equal(clues, 80);
     assert.ok(Math.abs(clues - sudoku.LEVELS[level].clues) <= 3, `${clues} indices`);
   });
 }

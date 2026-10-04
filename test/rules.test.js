@@ -136,6 +136,32 @@ test('règles Firestore', async (t) => {
     await assertSucceeds(setDoc(doc(bob, 'games/b1'), newGame('bob')));
   });
 
+  await t.test('lots de 4 grilles', async () => {
+    const lot = (uid, extra = {}) => ({
+      uid,
+      level: 'moyen',
+      createdAt: serverTimestamp(),
+      puzzles: [P, P, P, P],
+      solutions: [S, S, S, S],
+      gameIds: ['', '', '', ''],
+      ...extra,
+    });
+    await assertSucceeds(setDoc(doc(alice, 'lots/l1'), lot('alice')));
+    await assertFails(setDoc(doc(alice, 'lots/l2'), lot('bob')));
+    await assertFails(setDoc(doc(alice, 'lots/l3'), lot('alice', { puzzles: [P, P, P] })));
+    await assertFails(setDoc(doc(intrus, 'lots/l4'), lot('intrus')));
+    await assertSucceeds(getDoc(doc(alice, 'lots/l1')));
+    await assertFails(getDoc(doc(bob, 'lots/l1')));
+    await assertSucceeds(getDoc(doc(admin, 'lots/l1')));
+    // Une grille du lot devient une partie liée au lot.
+    await assertSucceeds(setDoc(doc(alice, 'games/lg1'), newGame('alice', { lotId: 'l1', lotIndex: 1 })));
+    await assertSucceeds(updateDoc(doc(alice, 'lots/l1'), { gameIds: ['', 'lg1', '', ''] }));
+    await assertFails(updateDoc(doc(alice, 'lots/l1'), { level: 'facile' }));
+    await assertFails(updateDoc(doc(bob, 'lots/l1'), { gameIds: ['x', '', '', ''] }));
+    await assertFails(deleteDoc(doc(bob, 'lots/l1')));
+    await assertSucceeds(deleteDoc(doc(alice, 'lots/l1')));
+  });
+
   await t.test('joueur désactivé bloqué', async () => {
     await assertSucceeds(updateDoc(doc(admin, 'players/bob@test.fr'), { active: false }));
     await assertFails(updateDoc(doc(bob, 'games/b1'), { elapsedSeconds: 10 }));

@@ -138,8 +138,13 @@ test('règles Firestore', async (t) => {
 
   await t.test('lots de 4 grilles', async () => {
     const lot = (uid, extra = {}) => ({
-      uid, level: 'moyen', createdAt: serverTimestamp(),
-      puzzles: [P, P, P, P], solutions: [S, S, S, S], gameIds: ['', '', '', ''], ...extra,
+      uid,
+      level: 'moyen',
+      createdAt: serverTimestamp(),
+      puzzles: [P, P, P, P],
+      solutions: [S, S, S, S],
+      gameIds: ['', '', '', ''],
+      ...extra,
     });
     await assertSucceeds(setDoc(doc(alice, 'lots/l1'), lot('alice')));
     await assertFails(setDoc(doc(alice, 'lots/l2'), lot('bob')));

@@ -281,7 +281,9 @@ export async function getLot(id) {
 
 export async function listMyLots(uid) {
   const snap = await getDocs(query(collection(db, 'lots'), where('uid', '==', uid)));
-  return snap.docs.map(lotFromSnap).sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+  return snap.docs
+    .map(lotFromSnap)
+    .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
 }
 
 /** Lance (ou retrouve) la partie de la grille n° `index` d'un lot. */

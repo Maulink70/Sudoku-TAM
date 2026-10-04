@@ -196,19 +196,23 @@ function gameFromSnap(snap) {
     startedAt: toDate(d.startedAt),
     updatedAt: toDate(d.updatedAt),
     finishedAt: toDate(d.finishedAt),
+    lotId: d.lotId || null,
+    lotIndex: Number.isInteger(d.lotIndex) ? d.lotIndex : null,
   };
 }
 
-export async function createGame(user, playerName, level, puzzle, solution) {
+/** Crée une partie. `lot` ({ lotId, lotIndex }) relie la partie à un lot de 4 grilles. */
+export async function createGame(user, playerName, level, puzzle, solution, lot = null) {
   const ref = doc(collection(db, 'games'));
-  const p = puzzle.join('');
+  const p = Array.isArray(puzzle) ? puzzle.join('') : puzzle;
   await setDoc(ref, {
+    ...(lot && { lotId: lot.lotId, lotIndex: lot.lotIndex }),
     uid: user.uid,
     playerName,
     level,
     status: 'en_cours',
     puzzle: p,
-    solution: solution.join(''),
+    solution: Array.isArray(solution) ? solution.join('') : solution,
     board: p,
     notes: new Array(81).fill(0),
     hints: [],
@@ -239,6 +243,62 @@ export function saveGame(game, extra = {}) {
     updatedAt: serverTimestamp(),
     ...extra,
   });
+}
+
+// ------------------------------------------------------------ lots de 4 grilles
+
+function lotFromSnap(snap) {
+  const d = snap.data({ serverTimestamps: 'estimate' });
+  return {
+    id: snap.id,
+    uid: d.uid,
+    level: d.level,
+    createdAt: toDate(d.createdAt),
+    puzzles: d.puzzles.map((p) => [...p].map(Number)),
+    solutions: d.solutions.map((s) => [...s].map(Number)),
+    gameIds: d.gameIds.map((g) => g || null),
+  };
+}
+
+/** Enregistre 4 grilles d'un même niveau ; aucune partie n'est créée tant qu'on n'y joue pas. */
+export async function createLot(user, level, grids) {
+  const ref = doc(collection(db, 'lots'));
+  await setDoc(ref, {
+    uid: user.uid,
+    level,
+    createdAt: serverTimestamp(),
+    puzzles: grids.map((g) => g.puzzle.join('')),
+    solutions: grids.map((g) => g.solution.join('')),
+    gameIds: ['', '', '', ''],
+  });
+  return lotFromSnap(await getDoc(ref));
+}
+
+export async function getLot(id) {
+  const snap = await getDoc(doc(db, 'lots', id));
+  return snap.exists() ? lotFromSnap(snap) : null;
+}
+
+export async function listMyLots(uid) {
+  const snap = await getDocs(query(collection(db, 'lots'), where('uid', '==', uid)));
+  return snap.docs.map(lotFromSnap).sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+}
+
+/** Lance (ou retrouve) la partie de la grille n° `index` d'un lot. */
+export async function playLotGrid(user, playerName, lot, index) {
+  if (lot.gameIds[index]) return getGame(lot.gameIds[index]);
+  const game = await createGame(user, playerName, lot.level, lot.puzzles[index], lot.solutions[index], {
+    lotId: lot.id,
+    lotIndex: index,
+  });
+  const gameIds = lot.gameIds.map((g, i) => (i === index ? game.id : g || ''));
+  await updateDoc(doc(db, 'lots', lot.id), { gameIds });
+  lot.gameIds[index] = game.id;
+  return game;
+}
+
+export function deleteLot(id) {
+  return deleteDoc(doc(db, 'lots', id));
 }
 
 export function deleteGame(id) {

@@ -6,10 +6,17 @@ https://sudoku-tam.vercel.app
 
 ## Fonctionnalités
 
-- **6 niveaux** : Niveau Mauro (une seule case à remplir, 😇), Très facile, Facile, Moyen, Difficile,
-  Extrême. Chaque grille a une **solution unique**. « Niveau Mauro » n'entre pas dans le classement.
+- **6 niveaux** : Débutant (environ 60 chiffres visibles), Très facile, Facile, Moyen, Difficile, Extrême.
+  Chaque grille a une **solution unique**.
 - **Impression** : le bouton 🖨️ du jeu imprime la grille en cours (ou l'enregistre en PDF), avec le
   niveau, la date de début et la date d'impression.
+- **Mes 4 grilles** : génère 4 grilles d'un même niveau, imprimables ensemble sur une feuille A4 (avec
+  l'avancement de chacune), plus une feuille de solutions séparée. Chaque grille se joue sur le
+  téléphone quand on le souhaite ; une grille ne compte dans les stats qu'une fois jouée.
+- **Solution** affichée après un abandon (bons chiffres, erreurs corrigées, cases à trouver).
+- **Accueil** : « Mes parties », « Classement » et « Mes 4 grilles » en accès direct ; les réglages
+  (thème, taille des chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue
+  crantée ⚙️.
 - **Jeu tactile** au design inspiré de Sudoku.com : on touche une case, puis un chiffre.
   Outils Annuler, Effacer, Notes, et **10 bonus** par partie (chaque bonus remplit une case au
   hasard ; elle s'affiche en violet et ne peut plus être modifiée).
@@ -45,7 +52,8 @@ https://sudoku-tam.vercel.app
 - `players/{email}` : fiche d'un joueur autorisé (`name`, `isAdmin`, `active`, `uid`). Seul un
   administrateur peut en créer. Un compte de connexion sans fiche ne peut **rien** lire ni écrire.
 - `games/{id}` : une partie (`uid`, `playerName`, `level`, `status`, grilles, `elapsedSeconds`,
-  `hintsLeft`, `errors`, `startedAt`, `finishedAt`).
+  `hintsLeft`, `errors`, `startedAt`, `finishedAt`, et `lotId`/`lotIndex` si elle vient d'un lot).
+- `lots/{id}` : 4 grilles imprimables (`uid`, `level`, `puzzles`, `solutions`, `gameIds`).
 
 ## Mise en place (déjà faite)
 

@@ -7,15 +7,26 @@ import { MAX_HINTS } from './config.js';
 const $app = document.getElementById('app');
 
 const LEVELS = [
-  { id: 'pour_mauro', label: 'Niveau Mauro', dots: 0, color: 'var(--lvl-mauro)', ranked: false },
-  { id: 'tres_facile', label: 'Très facile', dots: 1, color: 'var(--lvl-tres-facile)' },
-  { id: 'facile', label: 'Facile', dots: 2, color: 'var(--lvl-facile)' },
-  { id: 'moyen', label: 'Moyen', dots: 3, color: 'var(--lvl-moyen)' },
-  { id: 'difficile', label: 'Difficile', dots: 4, color: 'var(--lvl-difficile)' },
-  { id: 'extreme', label: 'Extrême', dots: 5, color: 'var(--lvl-extreme)' },
+  { id: 'debutant', label: 'Débutant', dots: 1, color: 'var(--lvl-debutant)' },
+  { id: 'tres_facile', label: 'Très facile', dots: 2, color: 'var(--lvl-tres-facile)' },
+  { id: 'facile', label: 'Facile', dots: 3, color: 'var(--lvl-facile)' },
+  { id: 'moyen', label: 'Moyen', dots: 4, color: 'var(--lvl-moyen)' },
+  { id: 'difficile', label: 'Difficile', dots: 5, color: 'var(--lvl-difficile)' },
+  { id: 'extreme', label: 'Extrême', dots: 6, color: 'var(--lvl-extreme)' },
+  // Ancien niveau, conservé seulement pour afficher les parties déjà jouées.
+  {
+    id: 'pour_mauro',
+    label: 'Niveau Mauro',
+    dots: 0,
+    color: 'var(--lvl-debutant)',
+    ranked: false,
+    hidden: true,
+  },
 ];
-// « Niveau Mauro » n'entre ni dans le classement ni dans les meilleurs temps.
-const RANKED_LEVELS = LEVELS.filter((l) => l.ranked !== false);
+const PLAYABLE_LEVELS = LEVELS.filter((l) => !l.hidden);
+const RANKED_LEVELS = LEVELS.filter((l) => l.ranked !== false && !l.hidden);
+const levelDots = (l) =>
+  `<span class="dots">${[1, 2, 3, 4, 5, 6].map((n) => `<i class="${n <= l.dots ? 'on' : ''}"></i>`).join('')}</span>`;
 const levelInfo = (id) => LEVELS.find((l) => l.id === id) || LEVELS.find((l) => l.id === 'moyen');
 
 const STATUS_LABEL = { en_cours: 'En cours', terminee: 'Terminée', abandonnee: 'Abandonnée' };
@@ -50,6 +61,13 @@ const ICONS = {
   }),
   textSize: svg(
     '<path d="M2.5 19L8 5l5.5 14"/><path d="M4.6 14h6.8"/><path d="M14.5 19l3.5-8.5 3.5 8.5"/><path d="M15.7 16.2h4.6"/>',
+  ),
+  gear: svg(
+    '<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    { stroke: 1.6 },
+  ),
+  grid4: svg(
+    '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
   ),
   printer: svg(
     '<path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/><path d="M17 12h.01"/>',
@@ -277,6 +295,11 @@ function route() {
   const gameMatch = hash.match(/^#\/partie\/([\w-]+)$/);
   if (!gameMatch || (G.game && G.game.id !== gameMatch[1])) leaveGame();
   if (gameMatch) return renderGame(gameMatch[1]);
+  const lotMatch = hash.match(/^#\/grilles\/([\w-]+)$/);
+  if (lotMatch) return renderLot(lotMatch[1]);
+  const solMatch = hash.match(/^#\/solution\/([\w-]+)$/);
+  if (solMatch) return renderSolution(solMatch[1]);
+  if (hash === '#/grilles') return renderLots();
   if (hash === '#/historique') return renderHistory();
   if (hash === '#/classement') return renderLeaderboard();
   if (hash === '#/admin' && me.isAdmin) return renderAdmin();
@@ -422,45 +445,11 @@ async function renderHome() {
   const showInstall = !isStandalone() && (installPrompt || isIos());
 
   $app.innerHTML = `
-    <div class="topbar"><span class="spacer"></span><h1>SudoTam</h1><span class="spacer"></span></div>
-    <div class="hello">
-      <div class="muted">Bonjour</div>
-      <h2>${esc(me.name)} 👋</h2>
+    <div class="topbar">
+      <span class="spacer"></span><h1>SudoTam</h1>
+      <button class="icon-btn" id="h-gear" aria-label="Réglages" aria-expanded="false">${ICONS.gear}</button>
     </div>
-
-    ${
-      current
-        ? `<div class="section-title">Partie en cours</div>
-           <div class="card resume-card">
-             <div class="grow">
-               <div class="title">${levelInfo(current.level).label}</div>
-               <div class="meta">Commencée le ${fmtDate(current.startedAt)} · ${fmtTime(current.elapsedSeconds)}</div>
-             </div>
-             <button class="btn btn-small" id="resume">Continuer</button>
-           </div>`
-        : ''
-    }
-
-    <div class="section-title">Nouvelle partie</div>
-    <div class="levels">
-      ${LEVELS.map(
-        (l) => `
-        <button class="level-btn" data-level="${l.id}" style="--lvl:${l.color}">
-          <span class="name">${l.label}</span>
-          ${
-            l.dots
-              ? `<span class="dots">${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= l.dots ? 'on' : ''}"></i>`).join('')}</span>`
-              : '<span class="level-tag level-emoji">😇</span>'
-          }
-        </button>`,
-      ).join('')}
-    </div>
-
-    <div class="section-title">Menu</div>
-    <div class="card menu-list">
-      <button id="m-history">${ICONS.history}Mes parties<span class="chev">${ICONS.chev}</span></button>
-      <button id="m-ranking">${ICONS.trophy}Classement<span class="chev">${ICONS.chev}</span></button>
-      ${me.isAdmin ? `<button id="m-admin">${ICONS.admin}Administration<span class="chev">${ICONS.chev}</span></button>` : ''}
+    <div class="gear-menu card menu-list" id="gear-menu" hidden>
       <label class="menu-row" for="m-theme">${ICONS.theme}Thème
         <select id="m-theme" class="menu-select">
           ${Object.entries(THEMES)
@@ -481,9 +470,43 @@ async function renderHome() {
         </select>
       </label>
       <button id="m-sound"><span id="m-sound-icon">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</span>Sons<span class="value" id="m-sound-value">${sound.isMuted() ? 'Coupés' : 'Activés'}</span></button>
+      ${me.isAdmin ? `<button id="m-admin">${ICONS.admin}Administration<span class="chev">${ICONS.chev}</span></button>` : ''}
       <button id="m-install" ${showInstall ? '' : 'hidden'}>${ICONS.install}Installer l’application<span class="chev">${ICONS.chev}</span></button>
       <button id="m-password">${ICONS.key}Changer mon mot de passe<span class="chev">${ICONS.chev}</span></button>
       <button id="m-logout">${ICONS.logout}Se déconnecter</button>
+    </div>
+
+    <div class="hello">
+      <div class="muted">Bonjour</div>
+      <h2>${esc(me.name)} 👋</h2>
+    </div>
+
+    ${
+      current
+        ? `<div class="card resume-card">
+             <div class="grow">
+               <div class="title">▶ Partie en cours · ${levelInfo(current.level).label}</div>
+               <div class="meta">Commencée le ${fmtDate(current.startedAt)} · ${fmtTime(current.elapsedSeconds)}</div>
+             </div>
+             <button class="btn btn-small" id="resume">Continuer</button>
+           </div>`
+        : ''
+    }
+
+    <div class="home-actions">
+      <button class="home-tile primary" id="m-history">${ICONS.history}<span>Mes parties</span></button>
+      <button class="home-tile" id="m-ranking">${ICONS.trophy}<span>Classement</span></button>
+      <button class="home-tile" id="m-lots">${ICONS.grid4}<span>Mes 4 grilles</span></button>
+    </div>
+
+    <div class="section-title">Nouvelle partie</div>
+    <div class="levels levels-compact">
+      ${PLAYABLE_LEVELS.map(
+        (l) => `
+        <button class="level-btn" data-level="${l.id}" style="--lvl:${l.color}">
+          <span class="name">${l.label}</span>${levelDots(l)}
+        </button>`,
+      ).join('')}
     </div>`;
 
   if (current) document.getElementById('resume').onclick = () => go(`#/partie/${current.id}`);
@@ -492,6 +515,23 @@ async function renderHome() {
   });
   document.getElementById('m-history').onclick = () => go('#/historique');
   document.getElementById('m-ranking').onclick = () => go('#/classement');
+  document.getElementById('m-lots').onclick = () => go('#/grilles');
+
+  // Roue crantée : menu des réglages.
+  const gear = document.getElementById('h-gear');
+  const menu = document.getElementById('gear-menu');
+  const closeMenu = (e) => {
+    if (e && (menu.contains(e.target) || gear.contains(e.target))) return;
+    menu.hidden = true;
+    gear.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', closeMenu, true);
+  };
+  gear.onclick = () => {
+    if (!menu.hidden) return closeMenu();
+    menu.hidden = false;
+    gear.setAttribute('aria-expanded', 'true');
+    setTimeout(() => document.addEventListener('pointerdown', closeMenu, true));
+  };
   if (me.isAdmin) document.getElementById('m-admin').onclick = () => go('#/admin');
   document.getElementById('m-theme').onchange = (e) => setTheme(e.target.value);
   document.getElementById('m-digits').onchange = (e) => setDigitSize(e.target.value);
@@ -682,7 +722,7 @@ async function renderGame(id) {
     G.cellKeys.push('');
   }
 
-  document.getElementById('g-back').onclick = () => go('#/');
+  document.getElementById('g-back').onclick = () => go(game.lotId ? `#/grilles/${game.lotId}` : '#/');
   document.getElementById('g-sound').onclick = (e) => {
     sound.setMuted(!sound.isMuted());
     e.currentTarget.innerHTML = sound.isMuted() ? ICONS.soundOff : ICONS.soundOn;
@@ -983,51 +1023,89 @@ window.addEventListener('online', () => {
 async function abandon() {
   if (!G.game) return;
   const ok = await openDialog({
-    title: 'Abandonner la partie ?',
-    body: '<p>La partie sera enregistrée comme abandonnée et ne pourra plus être reprise.</p>',
+    title: 'Abandonner et voir la solution ?',
+    body: '<p>La partie sera enregistrée comme abandonnée et ne pourra plus être reprise. La solution s’affichera ensuite.</p>',
     ok: 'Abandonner',
     danger: true,
   });
   if (!ok || !G.game) return;
+  const id = G.game.id;
   G.game.status = 'abandonnee';
   saveNow('abandonnee');
-  toast('Partie abandonnée');
-  go('#/');
+  go(`#/solution/${id}`);
 }
 
 // ------------------------------------------------------------ impression
 
-// Remplit la feuille d'impression (grille en SVG, niveau, dates) puis ouvre
-// la fenêtre d'impression du téléphone (imprimante ou « Enregistrer en PDF »).
-function printGrid() {
-  const g = G.game;
-  if (!g) return;
+/** Grille en SVG : chiffres de départ (« given ») et chiffres du joueur (« mine »). */
+function gridSvg(puzzle, board, cls) {
   const S = 100;
   let lines = '';
   for (let k = 0; k <= 9; k++) {
-    const w = k % 3 === 0 ? 5 : 1.5;
-    lines += `<line x1="${k * S}" y1="0" x2="${k * S}" y2="${9 * S}" stroke-width="${w}"/>`;
-    lines += `<line x1="0" y1="${k * S}" x2="${9 * S}" y2="${k * S}" stroke-width="${w}"/>`;
+    const c = k % 3 === 0 ? 'gl-thick' : 'gl-thin';
+    lines += `<line class="${c}" x1="${k * S}" y1="0" x2="${k * S}" y2="${9 * S}"/>`;
+    lines += `<line class="${c}" x1="0" y1="${k * S}" x2="${9 * S}" y2="${k * S}"/>`;
   }
   let digits = '';
   for (let i = 0; i < 81; i++) {
-    const v = g.board[i];
+    const v = board[i];
     if (!v) continue;
-    const given = g.puzzle[i] !== 0;
-    digits += `<text x="${COL(i) * S + S / 2}" y="${ROW(i) * S + S / 2}" class="${given ? 'given' : 'mine'}">${v}</text>`;
+    digits += `<text x="${COL(i) * S + S / 2}" y="${ROW(i) * S + S / 2}" class="${puzzle[i] ? 'given' : 'mine'}">${v}</text>`;
   }
-  const sheet = document.getElementById('print-sheet');
-  sheet.innerHTML = `
+  return `<svg class="${cls}" viewBox="-3 -3 906 906" xmlns="http://www.w3.org/2000/svg">
+      <rect class="gbg" x="0" y="0" width="900" height="900"/>
+      <g stroke-linecap="square">${lines}</g>
+      <g font-family="Helvetica, Arial, sans-serif" font-size="62" text-anchor="middle" dominant-baseline="central">${digits}</g>
+    </svg>`;
+}
+
+// Remplit la feuille d'impression puis ouvre la fenêtre d'impression du téléphone
+// (imprimante ou « Enregistrer en PDF »).
+function openPrint(html) {
+  document.getElementById('print-sheet').innerHTML = html;
+  window.print();
+}
+
+/** Les 4 grilles d'un lot sur une feuille A4 ; `boards` donne l'avancement de chaque grille. */
+function printLot(lot, boards, { solutions = false } = {}) {
+  const lvl = levelInfo(lot.level).label;
+  openPrint(`
+    <div class="print-head">
+      <div class="print-level">${solutions ? 'Solutions · ' : ''}Niveau : ${lvl}</div>
+      <div class="print-dates">4 grilles créées le ${fmtDate(lot.createdAt)} · Imprimée le ${fmtDate(new Date())}</div>
+    </div>
+    <div class="print-lot">
+      ${lot.puzzles
+        .map(
+          (p, k) => `<div class="print-cell"><div class="print-label">Grille ${k + 1}</div>
+            ${gridSvg(p, solutions ? lot.solutions[k] : boards[k] || p, 'print-grid small')}</div>`,
+        )
+        .join('')}
+    </div>`);
+}
+
+async function printGrid() {
+  const g = G.game;
+  if (!g) return;
+  if (g.lotId) {
+    // Partie issue d'un lot : on imprime les 4 grilles, avec l'avancement à jour.
+    try {
+      const lot = await fb.getLot(g.lotId);
+      if (lot) {
+        const boards = await lotBoards(lot);
+        boards[g.lotIndex] = g.board;
+        return printLot(lot, boards);
+      }
+    } catch (err) {
+      return toast(fb.errorMessage(err));
+    }
+  }
+  openPrint(`
     <div class="print-head">
       <div class="print-level">Niveau : ${levelInfo(g.level).label}</div>
       <div class="print-dates">Partie commencée le ${fmtDate(g.startedAt)} · Imprimée le ${fmtDate(new Date())}</div>
     </div>
-    <svg class="print-grid" viewBox="-3 -3 906 906" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="900" height="900" fill="#fff"/>
-      <g stroke="#000" stroke-linecap="square">${lines}</g>
-      <g font-family="Helvetica, Arial, sans-serif" font-size="62" text-anchor="middle" dominant-baseline="central">${digits}</g>
-    </svg>`;
-  window.print();
+    ${gridSvg(g.puzzle, g.board, 'print-grid')}`);
 }
 
 // ------------------------------------------------------------ victoire
@@ -1053,9 +1131,10 @@ function win() {
     <div><b>${g.errors}</b>Erreurs</div>
     <div><b>${MAX_HINTS - g.hintsLeft}</b>Bonus</div>`;
   const newBtn = document.getElementById('win-new');
-  newBtn.textContent = `Rejouer (${lvl.label})`;
+  newBtn.textContent = g.lotId ? 'Mes 4 grilles' : `Rejouer (${lvl.label})`;
   newBtn.onclick = () => {
     hideWin();
+    if (g.lotId) return go(`#/grilles/${g.lotId}`);
     leaveGame(false);
     newGame(g.level);
   };
@@ -1120,6 +1199,9 @@ async function renderHistory() {
   $app.querySelectorAll('[data-resume]').forEach((b) => {
     b.onclick = () => go(`#/partie/${b.dataset.resume}`);
   });
+  $app.querySelectorAll('[data-solution]').forEach((b) => {
+    b.onclick = () => go(`#/solution/${b.dataset.solution}`);
+  });
   $app.querySelectorAll('[data-delete]').forEach((b) => {
     b.onclick = async () => {
       if (await confirmDeleteGame(games.find((g) => g.id === b.dataset.delete))) renderHistory();
@@ -1155,14 +1237,271 @@ function gameItem(g) {
         <div class="line1">
           <span class="lvl-tag" style="--lvl:${lvl.color}">${lvl.label}</span>
           <span class="status ${g.status}">${statusText(g)}</span>
+          ${g.lotId ? `<span class="muted small-tag">Grille ${g.lotIndex + 1}/4</span>` : ''}
         </div>
         <div class="line2">Début : ${fmtDate(g.startedAt)} · ${plural(g.errors, 'erreur')} · ${MAX_HINTS - g.hintsLeft} bonus</div>
       </div>
       <div class="item-actions">
         ${g.status === 'en_cours' ? `<button class="btn btn-primary btn-small" data-resume="${g.id}">Reprendre</button>` : ''}
+        ${g.status === 'abandonnee' ? `<button class="btn btn-ghost btn-small" data-solution="${g.id}">Solution</button>` : ''}
         <button class="icon-btn small danger" data-delete="${g.id}" aria-label="Supprimer la partie">${ICONS.trash}</button>
       </div>
     </div>`;
+}
+
+// ---------------------------------------------------- 4 grilles imprimables
+
+/** Avancement de chaque grille d'un lot (grille de départ si elle n'a pas encore été jouée). */
+async function lotBoards(lot, gamesById = null) {
+  return Promise.all(
+    lot.gameIds.map(async (id, k) => {
+      if (!id) return lot.puzzles[k];
+      const g = gamesById ? gamesById.get(id) : await fb.getGame(id).catch(() => null);
+      return g ? g.board : lot.puzzles[k];
+    }),
+  );
+}
+
+function lotSummary(lot, gamesById) {
+  const count = { terminee: 0, en_cours: 0, abandonnee: 0, todo: 0 };
+  lot.gameIds.forEach((id) => {
+    const g = id && gamesById.get(id);
+    count[g ? g.status : 'todo']++;
+  });
+  return [
+    count.terminee && plural(count.terminee, 'terminée'),
+    count.en_cours && `${count.en_cours} en cours`,
+    count.abandonnee && plural(count.abandonnee, 'abandonnée'),
+    count.todo && `${count.todo} à jouer`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+async function renderLots() {
+  splash();
+  let lots = [];
+  let games = [];
+  try {
+    [lots, games] = await Promise.all([fb.listMyLots(me.uid), fb.listMyGames(me.uid)]);
+  } catch (err) {
+    toast(fb.errorMessage(err));
+  }
+  if (location.hash !== '#/grilles') return;
+  const byId = new Map(games.map((g) => [g.id, g]));
+  $app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" id="l-back" aria-label="Retour">${ICONS.back}</button>
+      <h1>Mes 4 grilles</h1><span class="spacer"></span>
+    </div>
+    <p class="muted intro-text">Générez 4 grilles d’un même niveau, imprimez-les sur une seule feuille A4 et jouez celles que vous voulez sur le téléphone.</p>
+    <button class="btn btn-primary btn-block" id="l-new">${ICONS.grid4.replace('<svg', '<svg width="22" height="22"')} Générer 4 grilles</button>
+    <div class="section-title">${lots.length ? plural(lots.length, 'lot') : 'Aucun lot pour le moment'}</div>
+    <div class="game-list">
+      ${lots
+        .map((lot) => {
+          const lvl = levelInfo(lot.level);
+          return `
+          <div class="card game-item lot-item" data-open="${lot.id}">
+            <div class="grow">
+              <div class="line1"><span class="lvl-tag" style="--lvl:${lvl.color}">${lvl.label}</span>
+                <span class="muted">${fmtDate(lot.createdAt)}</span></div>
+              <div class="line2">${lotSummary(lot, byId)}</div>
+            </div>
+            <div class="item-actions">
+              <span class="chev">${ICONS.chev}</span>
+              <button class="icon-btn small danger" data-delete-lot="${lot.id}" aria-label="Supprimer ces 4 grilles">${ICONS.trash}</button>
+            </div>
+          </div>`;
+        })
+        .join('')}
+    </div>`;
+  document.getElementById('l-back').onclick = () => go('#/');
+  document.getElementById('l-new').onclick = newLot;
+  $app.querySelectorAll('[data-open]').forEach((el) => {
+    el.onclick = (e) => {
+      if (e.target.closest('[data-delete-lot]')) return;
+      go(`#/grilles/${el.dataset.open}`);
+    };
+  });
+  $app.querySelectorAll('[data-delete-lot]').forEach((b) => {
+    b.onclick = async () => {
+      if (await confirmDeleteLot(b.dataset.deleteLot)) renderLots();
+    };
+  });
+}
+
+async function confirmDeleteLot(id) {
+  const ok = await openDialog({
+    title: 'Supprimer ces 4 grilles ?',
+    body: '<p>Les grilles pas encore jouées disparaissent. Les parties déjà jouées restent dans « Mes parties ».</p>',
+    ok: 'Supprimer',
+    danger: true,
+  });
+  if (!ok) return false;
+  try {
+    await fb.deleteLot(id);
+    toast('Grilles supprimées');
+    return true;
+  } catch (err) {
+    toast(fb.errorMessage(err));
+    return false;
+  }
+}
+
+async function newLot() {
+  const data = await openDialog({
+    title: 'Générer 4 grilles',
+    body: `<p>Choisissez le niveau des 4 grilles :</p>
+      <div class="level-choice">
+        ${PLAYABLE_LEVELS.map(
+          (
+            l,
+          ) => `<label style="--lvl:${l.color}"><input type="radio" name="level" value="${l.id}" ${l.id === 'moyen' ? 'checked' : ''}/>
+            <span>${l.label}</span></label>`,
+        ).join('')}
+      </div>`,
+    ok: 'Générer',
+  });
+  if (!data) return;
+  const btn = document.getElementById('l-new');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Génération…';
+  }
+  await new Promise((r) => setTimeout(r, 30));
+  try {
+    const grids = [0, 1, 2, 3].map(() => generate(data.level));
+    const lot = await fb.createLot(authUser, data.level, grids);
+    go(`#/grilles/${lot.id}`);
+  } catch (err) {
+    toast(fb.errorMessage(err));
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function renderLot(id) {
+  splash();
+  let lot = null;
+  let games = [];
+  try {
+    [lot, games] = await Promise.all([fb.getLot(id), fb.listMyGames(me.uid)]);
+  } catch (err) {
+    toast(fb.errorMessage(err));
+  }
+  if (location.hash !== `#/grilles/${id}`) return;
+  if (!lot) {
+    toast('Ces grilles n’existent plus.');
+    return go('#/grilles');
+  }
+  const byId = new Map(games.map((g) => [g.id, g]));
+  const boards = await lotBoards(lot, byId);
+  const lvl = levelInfo(lot.level);
+  const cell = (k) => {
+    const g = lot.gameIds[k] && byId.get(lot.gameIds[k]);
+    const status = !g
+      ? { cls: 'todo', text: 'À jouer', btn: 'Jouer' }
+      : g.status === 'en_cours'
+        ? { cls: 'en_cours', text: `En cours · ${fmtTime(g.elapsedSeconds)}`, btn: 'Reprendre' }
+        : g.status === 'terminee'
+          ? { cls: 'terminee', text: `✅ Terminée en ${fmtTime(g.elapsedSeconds)}`, btn: 'Voir' }
+          : { cls: 'abandonnee', text: 'Abandonnée', btn: 'Solution' };
+    return `
+      <button class="lot-cell" data-grid="${k}">
+        <span class="lot-cell-title">Grille ${k + 1}</span>
+        ${gridSvg(lot.puzzles[k], boards[k], 'mini-grid')}
+        <span class="status ${status.cls}">${status.text}</span>
+        <span class="btn btn-small ${status.cls === 'todo' || status.cls === 'en_cours' ? 'btn-primary' : 'btn-ghost'}">${status.btn}</span>
+      </button>`;
+  };
+  $app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" id="lt-back" aria-label="Retour">${ICONS.back}</button>
+      <h1>4 grilles</h1><span class="spacer"></span>
+    </div>
+    <div class="lot-head"><span class="lvl-tag" style="--lvl:${lvl.color}">${lvl.label}</span>
+      <span class="muted">Créées le ${fmtDate(lot.createdAt)}</span></div>
+    <div class="lot-grid">${[0, 1, 2, 3].map(cell).join('')}</div>
+    <div class="lot-actions">
+      <button class="btn btn-primary" id="lt-print">${ICONS.printer.replace('<svg', '<svg width="20" height="20"')} Imprimer les 4</button>
+      <button class="btn btn-ghost" id="lt-sol">${ICONS.key.replace('<svg', '<svg width="20" height="20"')} Imprimer les solutions</button>
+      <button class="btn btn-danger" id="lt-del">${ICONS.trash.replace('<svg', '<svg width="20" height="20"')} Supprimer ces 4 grilles</button>
+    </div>`;
+  document.getElementById('lt-back').onclick = () => go('#/grilles');
+  document.getElementById('lt-print').onclick = () => printLot(lot, boards);
+  document.getElementById('lt-sol').onclick = () => printLot(lot, boards, { solutions: true });
+  document.getElementById('lt-del').onclick = async () => {
+    if (await confirmDeleteLot(lot.id)) go('#/grilles');
+  };
+  $app.querySelectorAll('[data-grid]').forEach((b) => {
+    b.onclick = async () => {
+      const k = Number(b.dataset.grid);
+      const g = lot.gameIds[k] && byId.get(lot.gameIds[k]);
+      if (g && g.status !== 'en_cours') return go(`#/solution/${g.id}`);
+      if (g) return go(`#/partie/${g.id}`);
+      b.disabled = true;
+      try {
+        const game = await fb.playLotGrid(authUser, me.name, lot, k);
+        G.preloaded = game;
+        go(`#/partie/${game.id}`);
+      } catch (err) {
+        toast(fb.errorMessage(err));
+        b.disabled = false;
+      }
+    };
+  });
+}
+
+// ------------------------------------------------------------- solution
+
+async function renderSolution(id) {
+  splash();
+  let g = null;
+  try {
+    g = await fb.getGame(id);
+  } catch (err) {
+    toast(fb.errorMessage(err));
+  }
+  if (location.hash !== `#/solution/${id}`) return;
+  if (!g || g.uid !== me.uid) {
+    toast('Partie introuvable.');
+    return go('#/');
+  }
+  if (g.status === 'en_cours') {
+    toast('Abandonnez la partie pour voir la solution.');
+    return go(`#/partie/${id}`);
+  }
+  const lvl = levelInfo(g.level);
+  let cells = '';
+  const count = { ok: 0, wrong: 0, missing: 0 };
+  for (let i = 0; i < 81; i++) {
+    const r = ROW(i);
+    const c = COL(i);
+    const base = ['cell', c === 8 ? 'c8' : c % 3 === 2 ? 'br' : '', r === 8 ? 'r8' : r % 3 === 2 ? 'bb' : ''];
+    const v = g.board[i];
+    let kind = 'given';
+    if (!g.puzzle[i]) kind = !v ? 'missing' : v === g.solution[i] ? 'ok' : 'wrong';
+    if (kind !== 'given') count[kind]++;
+    const was = kind === 'wrong' ? `<span class="was">${v}</span>` : '';
+    cells += `<div class="${base.filter(Boolean).join(' ')} sol-${kind}"><span class="v">${g.solution[i]}</span>${was}</div>`;
+  }
+  const back = g.lotId ? `#/grilles/${g.lotId}` : '#/historique';
+  $app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" id="s-back" aria-label="Retour">${ICONS.back}</button>
+      <h1>Solution</h1><span class="spacer"></span>
+    </div>
+    <div class="lot-head"><span class="lvl-tag" style="--lvl:${lvl.color}">${lvl.label}</span>
+      <span class="status ${g.status}">${statusText(g)}</span></div>
+    <div class="board-wrap solution-wrap"><div class="board">${cells}</div></div>
+    <div class="sol-legend">
+      <span><i class="lg-ok"></i>Vos bons chiffres (${count.ok})</span>
+      <span><i class="lg-wrong"></i>Vos erreurs, corrigées (${count.wrong})</span>
+      <span><i class="lg-missing"></i>Cases à trouver (${count.missing})</span>
+    </div>
+    <button class="btn btn-ghost btn-block" id="s-home">Retour</button>`;
+  document.getElementById('s-back').onclick = () => go(back);
+  document.getElementById('s-home').onclick = () => go(back);
 }
 
 // ---------------------------------------------------------- classement

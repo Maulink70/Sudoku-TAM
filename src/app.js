@@ -659,7 +659,7 @@ async function renderGame(id) {
     <div class="game">
       <div class="topbar game-topbar">
         <div class="tb-left">
-          <button class="icon-btn" id="g-back" aria-label="Retour">${ICONS.back}</button>
+          <button class="back-pill" id="g-back">${ICONS.back}<span>${game.lotId ? 'Mes grilles' : 'Accueil'}</span></button>
         </div>
         <h1>SudoTam</h1>
         <div class="tb-right">
@@ -667,7 +667,6 @@ async function renderGame(id) {
           <button class="icon-btn" id="g-print" aria-label="Imprimer la grille" title="Imprimer">${ICONS.printer}</button>
           <button class="icon-btn" id="g-theme" aria-label="Mode clair ou sombre">${THEMES[effectiveTheme()].dark ? ICONS.sun : ICONS.moon}</button>
           <button class="icon-btn" id="g-sound" aria-label="Sons">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</button>
-          <button class="icon-btn" id="g-abandon" aria-label="Abandonner" title="Abandonner">${ICONS.flag}</button>
         </div>
       </div>
       <div class="game-body">
@@ -689,6 +688,7 @@ async function renderGame(id) {
         <button class="tool" id="t-erase"><span class="ico">${ICONS.eraser}</span>Effacer</button>
         <button class="tool" id="t-notes"><span class="ico">${ICONS.pencil}<span class="badge off" id="t-notes-badge">OFF</span></span>Notes</button>
         <button class="tool" id="t-hint"><span class="ico">${ICONS.bulb}<span class="badge count" id="t-hint-badge"></span></span>Bonus</button>
+        <button class="tool tool-danger" id="g-abandon"><span class="ico">${ICONS.flag}</span>Abandonner</button>
       </div>
       <div class="game-saved" id="g-saved"></div>
       <div class="pad" id="g-pad">
@@ -1214,13 +1214,14 @@ async function confirmDeleteGame(g) {
   const ok = await openDialog({
     title: 'Supprimer cette partie ?',
     body: `<p>Partie ${levelInfo(g.level).label} du ${fmtDate(g.startedAt)}${g.playerName ? ` (${esc(g.playerName)})` : ''} — ${statusText(g).toLowerCase()}.</p>
-      <p class="hint-text">Elle disparaîtra de l’historique, des statistiques et du classement. Cette action est définitive.</p>`,
+      <p class="hint-text">Elle disparaîtra de l’historique, des statistiques et du classement. Cette action est définitive.</p>
+      ${g.lotId ? `<p class="hint-text">La grille ${g.lotIndex + 1}/4 redeviendra « à jouer » dans Mes 4 grilles.</p>` : ''}`,
     ok: 'Supprimer',
     danger: true,
   });
   if (!ok) return false;
   try {
-    await fb.deleteGame(g.id);
+    await fb.deleteGame(g);
     toast('Partie supprimée');
     return true;
   } catch (err) {

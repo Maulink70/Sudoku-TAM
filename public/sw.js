@@ -2,7 +2,7 @@
 
 // Service worker : met en cache l'interface pour un démarrage rapide.
 // Les échanges avec Firebase (autres domaines) ne passent pas par ce cache.
-const CACHE = 'sudoku-v5';
+const CACHE = 'sudoku-v6';
 const SHELL = [
   '/',
   '/index.html',

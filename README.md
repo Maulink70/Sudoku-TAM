@@ -10,14 +10,14 @@ https://sudoku-tam.vercel.app
   Chaque grille a une **solution unique**.
 - **Impression** : le bouton 🖨️ du jeu imprime la grille en cours (ou l'enregistre en PDF), avec le
   niveau, la date de début et la date d'impression.
-- **Mes 4 grilles** : génère 4 grilles d'un même niveau, imprimables ensemble sur une feuille A4 (avec
-  l'avancement de chacune), plus une feuille de solutions séparée. Chaque grille se joue sur le
+- **Mes grilles** : génère des lots de 4 grilles d'un même niveau, imprimables ensemble sur une
+  feuille A4 (avec l'avancement de chacune), plus une feuille de solutions séparée. Chaque grille se joue sur le
   téléphone quand on le souhaite ; une grille ne compte dans les stats qu'une fois jouée.
 - **Solution** affichée après un abandon (bouton « Abandonner » sous la grille) : bons chiffres,
   erreurs corrigées, cases à trouver.
-- Pendant la partie, le bouton **« Accueil »** (ou **« Mes grilles »** pour une grille d'un lot)
-  ramène en arrière. Supprimer une partie issue d'un lot remet sa grille « à jouer ».
-- **Accueil** : « Mes parties », « Classement » et « Mes 4 grilles » en accès direct ; les réglages
+- Pendant la partie, le bouton **« Accueil »** ramène à l'accueil. Supprimer une partie issue
+  d'un lot remet sa grille « à jouer ».
+- **Accueil** : « Mes parties », « Classement » et « Mes grilles » en accès direct ; les réglages
   (thème, taille des chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue
   crantée ⚙️.
 - **Jeu tactile** au design inspiré de Sudoku.com : on touche une case, puis un chiffre.

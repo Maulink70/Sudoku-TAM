@@ -38,6 +38,7 @@ const svg = (body, { stroke = 1.8, fill = false } = {}) =>
 
 const ICONS = {
   back: svg('<path d="M15 18l-6-6 6-6"/>', { stroke: 2 }),
+  power: svg('<path d="M12 3v8"/><path d="M6.6 6.6a7.5 7.5 0 1 0 10.8 0"/>', { stroke: 2 }),
   undo: svg('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 3.5v4.2h4.2"/>', { stroke: 1.6 }),
   eraser: svg(
     '<path d="M15.2 4.6l4.2 4.2a1.5 1.5 0 0 1 0 2.1L11.3 19H7.1l-3-3a1.5 1.5 0 0 1 0-2.1l9-9.3a1.5 1.5 0 0 1 2.1 0z"/><path d="M9 9.9l5.1 5.1"/><path d="M14 20.5h6.5"/>',
@@ -282,16 +283,65 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => appl
 
 // ------------------------------------------------------------ navigation
 
+// Appli installée sur Android : la navigation ne crée pas d'historique, sinon le navigateur refuse
+// que « Quitter » ferme la fenêtre. Le bouton retour du téléphone passe alors par un CloseWatcher.
+const SINGLE_HISTORY = typeof CloseWatcher === 'function' && matchMedia('(display-mode: standalone)').matches;
+let backWatcher = null;
+
 const go = (hash) => {
   if (location.hash === hash) route();
-  else location.hash = hash;
+  else if (SINGLE_HISTORY) {
+    history.replaceState(null, '', hash);
+    route();
+  } else location.hash = hash;
 };
+
+/** Hors de l'accueil, le retour du téléphone agit comme le bouton retour de l'écran. */
+function syncBackWatcher(onHome) {
+  if (!SINGLE_HISTORY) return;
+  if (onHome) {
+    backWatcher?.destroy();
+    backWatcher = null;
+  } else if (!backWatcher) {
+    backWatcher = new CloseWatcher();
+    backWatcher.onclose = () => {
+      backWatcher = null;
+      const back = $app.querySelector('[id$="-back"]');
+      if (back) back.click();
+      else go('#/');
+    };
+  }
+}
+
+async function quitApp() {
+  const ok = await openDialog({
+    title: 'Quitter SudoTam ?',
+    body: '<p>Vos parties sont déjà enregistrées.</p>',
+    ok: 'Quitter',
+  });
+  if (!ok) return;
+  window.close();
+  // Toujours là : le navigateur a refusé de fermer la fenêtre.
+  setTimeout(() => {
+    const ios =
+      /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    openDialog({
+      title: 'Fermeture impossible',
+      body: ios
+        ? '<p>Sur iPhone, l’appli ne peut pas se fermer elle-même : glissez vers le haut depuis le bas de l’écran pour la fermer.</p>'
+        : '<p>Le navigateur ne permet pas à l’appli de se fermer elle-même. Fermez-la avec le bouton ou le geste habituel du téléphone.</p>',
+      cancel: null,
+    });
+  }, 400);
+}
 
 window.addEventListener('hashchange', route);
 
 function route() {
   if (!me) return;
   const hash = location.hash || '#/';
+  syncBackWatcher(hash === '#/');
   const gameMatch = hash.match(/^#\/partie\/([\w-]+)$/);
   if (!gameMatch || (G.game && G.game.id !== gameMatch[1])) leaveGame();
   if (gameMatch) return renderGame(gameMatch[1]);
@@ -313,6 +363,7 @@ fb.onUserChanged(async (user) => {
   authUser = user;
   if (!user) {
     me = null;
+    syncBackWatcher(true);
     leaveGame(false);
     renderLogin();
     return;
@@ -507,8 +558,11 @@ async function renderHome() {
           <span class="name">${l.label}</span>${levelDots(l)}
         </button>`,
       ).join('')}
-    </div>`;
+    </div>
 
+    <button class="quit-btn" id="h-quit">${ICONS.power}Quitter</button>`;
+
+  document.getElementById('h-quit').onclick = quitApp;
   if (current) document.getElementById('resume').onclick = () => go(`#/partie/${current.id}`);
   $app.querySelectorAll('.level-btn').forEach((btn) => {
     btn.onclick = () => newGame(btn.dataset.level, btn);

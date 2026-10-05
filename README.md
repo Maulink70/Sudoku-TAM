@@ -20,6 +20,9 @@ https://sudoku-tam.vercel.app
 - **Accueil** : « Mes parties », « Classement » et « Mes grilles » en accès direct ; les réglages
   (thème, taille des chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue
   crantée ⚙️.
+- **Quitter** : bouton en bas de l'accueil. Il ferme l'appli installée sur Android (où le retour
+  du téléphone ramène aussi à l'écran précédent) ; ailleurs (iPhone, navigateur), un message
+  explique comment la fermer.
 - **Jeu tactile** au design inspiré de Sudoku.com : on touche une case, puis un chiffre.
   Outils Annuler, Effacer, Notes, et **10 bonus** par partie (chaque bonus remplit une case au
   hasard ; elle s'affiche en violet et ne peut plus être modifiée).

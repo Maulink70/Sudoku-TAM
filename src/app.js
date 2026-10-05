@@ -188,7 +188,7 @@ function openDialog({ title, body = '', ok = 'OK', cancel = 'Annuler', danger = 
 const THEME_KEY = 'sudoku-theme';
 const THEMES = {
   auto: { label: 'Automatique' },
-  clair: { label: 'Clair', dark: false, color: '#ffffff' },
+  clair: { label: 'Clair', dark: false, color: '#eef2f8' },
   nuit: { label: 'Bleu nuit', dark: true, color: '#121821' },
   noir: { label: 'Noir', dark: true, color: '#000000' },
   papier: { label: 'Papier', dark: false, color: '#f6efe1' },

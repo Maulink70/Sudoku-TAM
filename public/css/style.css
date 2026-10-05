@@ -1,10 +1,10 @@
 :root {
   color-scheme: light;
-  --bg: #ffffff;
+  --bg: #eef2f8;
   --card: #ffffff;
   --card-glass: rgba(255, 255, 255, 0.96);
-  --surface: #f4f7fb;
-  --border: #e3e8f0;
+  --surface: #e6ebf3;
+  --border: #dfe5ee;
   --border-soft: #edf0f5;
   --text: #344861;
   --muted: #8c99ad;
@@ -41,6 +41,9 @@
   --lvl-extreme: #d64560;
   --radius: 14px;
   --shadow: 0 6px 24px rgba(52, 72, 97, 0.12);
+  /* Relief des cadres et de la grille (marqué en thème Clair, discret ailleurs). */
+  --elev: 0 2px 8px rgba(52, 72, 97, 0.08);
+  --board-shadow: 0 2px 10px rgba(52, 72, 97, 0.1);
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -50,6 +53,8 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
+    --elev: 0 1px 2px rgba(52, 72, 97, 0.05);
+    --board-shadow: none;
     --bg: #121821;
     --card: #1a222d;
     --card-glass: rgba(26, 34, 45, 0.96);
@@ -95,6 +100,8 @@
 
 :root[data-theme='nuit'] {
   color-scheme: dark;
+  --elev: 0 1px 2px rgba(52, 72, 97, 0.05);
+  --board-shadow: none;
   --bg: #121821;
   --card: #1a222d;
   --card-glass: rgba(26, 34, 45, 0.96);
@@ -139,6 +146,8 @@
 
 :root[data-theme='noir'] {
   color-scheme: dark;
+  --elev: 0 1px 2px rgba(52, 72, 97, 0.05);
+  --board-shadow: none;
   --bg: #000000;
   --card: #0e0e10;
   --card-glass: rgba(14, 14, 16, 0.96);
@@ -183,6 +192,8 @@
 
 :root[data-theme='papier'] {
   color-scheme: light;
+  --elev: 0 1px 2px rgba(52, 72, 97, 0.05);
+  --board-shadow: none;
   --bg: #f6efe1;
   --card: #fbf6ea;
   --card-glass: rgba(251, 246, 234, 0.96);
@@ -415,7 +426,7 @@ button {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 16px;
-  box-shadow: 0 1px 2px rgba(52, 72, 97, 0.05);
+  box-shadow: var(--elev);
 }
 
 .section-title {
@@ -542,7 +553,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  box-shadow: 0 1px 2px rgba(52, 72, 97, 0.05);
+  box-shadow: var(--elev);
   transition: transform 0.08s;
 }
 
@@ -688,6 +699,7 @@ button {
   border-radius: 6px;
   overflow: hidden;
   background: var(--card);
+  box-shadow: var(--board-shadow);
 }
 
 .cell {
@@ -1707,7 +1719,8 @@ table.games tr:last-child td {
   padding: 10px 22px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: transparent;
+  background: var(--card);
+  box-shadow: var(--elev);
   color: var(--muted);
   font: inherit;
   font-size: 15px;
@@ -1904,7 +1917,7 @@ table.games tr:last-child td {
 
 .home-actions {
   display: grid;
-  grid-template-columns: 1.25fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
 }
@@ -1921,7 +1934,7 @@ table.games tr:last-child td {
   gap: 8px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 1px 2px rgba(52, 72, 97, 0.06);
+  box-shadow: var(--elev);
 }
 
 .home-tile svg {

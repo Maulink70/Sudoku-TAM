@@ -496,7 +496,7 @@ async function renderHome() {
     <div class="home-actions">
       <button class="home-tile primary" id="m-history">${ICONS.history}<span>Mes parties</span></button>
       <button class="home-tile" id="m-ranking">${ICONS.trophy}<span>Classement</span></button>
-      <button class="home-tile" id="m-lots">${ICONS.grid4}<span>Mes 4 grilles</span></button>
+      <button class="home-tile" id="m-lots">${ICONS.grid4}<span>Mes grilles</span></button>
     </div>
 
     <div class="section-title">Nouvelle partie</div>
@@ -659,7 +659,7 @@ async function renderGame(id) {
     <div class="game">
       <div class="topbar game-topbar">
         <div class="tb-left">
-          <button class="back-pill" id="g-back">${ICONS.back}<span>${game.lotId ? 'Mes grilles' : 'Accueil'}</span></button>
+          <button class="back-pill" id="g-back">${ICONS.back}<span>Accueil</span></button>
         </div>
         <h1>SudoTam</h1>
         <div class="tb-right">
@@ -722,7 +722,7 @@ async function renderGame(id) {
     G.cellKeys.push('');
   }
 
-  document.getElementById('g-back').onclick = () => go(game.lotId ? `#/grilles/${game.lotId}` : '#/');
+  document.getElementById('g-back').onclick = () => go('#/');
   document.getElementById('g-sound').onclick = (e) => {
     sound.setMuted(!sound.isMuted());
     e.currentTarget.innerHTML = sound.isMuted() ? ICONS.soundOff : ICONS.soundOn;
@@ -1131,7 +1131,7 @@ function win() {
     <div><b>${g.errors}</b>Erreurs</div>
     <div><b>${MAX_HINTS - g.hintsLeft}</b>Bonus</div>`;
   const newBtn = document.getElementById('win-new');
-  newBtn.textContent = g.lotId ? 'Mes 4 grilles' : `Rejouer (${lvl.label})`;
+  newBtn.textContent = g.lotId ? 'Mes grilles' : `Rejouer (${lvl.label})`;
   newBtn.onclick = () => {
     hideWin();
     if (g.lotId) return go(`#/grilles/${g.lotId}`);
@@ -1215,7 +1215,7 @@ async function confirmDeleteGame(g) {
     title: 'Supprimer cette partie ?',
     body: `<p>Partie ${levelInfo(g.level).label} du ${fmtDate(g.startedAt)}${g.playerName ? ` (${esc(g.playerName)})` : ''} — ${statusText(g).toLowerCase()}.</p>
       <p class="hint-text">Elle disparaîtra de l’historique, des statistiques et du classement. Cette action est définitive.</p>
-      ${g.lotId ? `<p class="hint-text">La grille ${g.lotIndex + 1}/4 redeviendra « à jouer » dans Mes 4 grilles.</p>` : ''}`,
+      ${g.lotId ? `<p class="hint-text">La grille ${g.lotIndex + 1}/4 redeviendra « à jouer » dans Mes grilles.</p>` : ''}`,
     ok: 'Supprimer',
     danger: true,
   });
@@ -1293,7 +1293,7 @@ async function renderLots() {
   $app.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" id="l-back" aria-label="Retour">${ICONS.back}</button>
-      <h1>Mes 4 grilles</h1><span class="spacer"></span>
+      <h1>Mes grilles</h1><span class="spacer"></span>
     </div>
     <p class="muted intro-text">Générez 4 grilles d’un même niveau, imprimez-les sur une seule feuille A4 et jouez celles que vous voulez sur le téléphone.</p>
     <button class="btn btn-primary btn-block" id="l-new">${ICONS.grid4.replace('<svg', '<svg width="22" height="22"')} Générer 4 grilles</button>

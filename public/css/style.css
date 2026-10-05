@@ -857,7 +857,7 @@ button {
 
 .tools {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin: 12px 0 4px;
 }
 
@@ -924,6 +924,11 @@ button {
 
 .badge.count.zero {
   background: var(--badge-off);
+}
+
+.tool-danger,
+.tool-danger .ico {
+  color: var(--danger);
 }
 
 .tool[disabled] {
@@ -1691,6 +1696,34 @@ table.games tr:last-child td {
 .tabs.tabs-levels button {
   font-size: 12px;
   padding: 10px 2px;
+}
+
+/* Bouton retour bien visible, avec son texte (Accueil ou Mes grilles). */
+.back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  height: max(36px, calc(var(--board) * 0.072));
+  padding: 0 14px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  font: inherit;
+  font-size: max(14px, calc(var(--board) * 0.034));
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.back-pill svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.back-pill:active {
+  filter: brightness(0.9);
 }
 
 /* Barre du haut du jeu : retour à gauche, titre centré, icônes à droite. */

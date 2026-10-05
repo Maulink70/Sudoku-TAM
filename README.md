@@ -13,7 +13,10 @@ https://sudoku-tam.vercel.app
 - **Mes 4 grilles** : génère 4 grilles d'un même niveau, imprimables ensemble sur une feuille A4 (avec
   l'avancement de chacune), plus une feuille de solutions séparée. Chaque grille se joue sur le
   téléphone quand on le souhaite ; une grille ne compte dans les stats qu'une fois jouée.
-- **Solution** affichée après un abandon (bons chiffres, erreurs corrigées, cases à trouver).
+- **Solution** affichée après un abandon (bouton « Abandonner » sous la grille) : bons chiffres,
+  erreurs corrigées, cases à trouver.
+- Pendant la partie, le bouton **« Accueil »** (ou **« Mes grilles »** pour une grille d'un lot)
+  ramène en arrière. Supprimer une partie issue d'un lot remet sa grille « à jouer ».
 - **Accueil** : « Mes parties », « Classement » et « Mes 4 grilles » en accès direct ; les réglages
   (thème, taille des chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue
   crantée ⚙️.

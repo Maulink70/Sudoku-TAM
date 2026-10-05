@@ -288,7 +288,11 @@ export async function listMyLots(uid) {
 
 /** Lance (ou retrouve) la partie de la grille n° `index` d'un lot. */
 export async function playLotGrid(user, playerName, lot, index) {
-  if (lot.gameIds[index]) return getGame(lot.gameIds[index]);
+  if (lot.gameIds[index]) {
+    // La partie liée a pu être supprimée entre-temps : on repart alors de zéro.
+    const existing = await getGame(lot.gameIds[index]).catch(() => null);
+    if (existing) return existing;
+  }
   const game = await createGame(user, playerName, lot.level, lot.puzzles[index], lot.solutions[index], {
     lotId: lot.id,
     lotIndex: index,
@@ -303,8 +307,18 @@ export function deleteLot(id) {
   return deleteDoc(doc(db, 'lots', id));
 }
 
-export function deleteGame(id) {
-  return deleteDoc(doc(db, 'games', id));
+/** Supprime une partie. Si elle vient d'un lot, sa grille redevient « à jouer ». */
+export async function deleteGame(game) {
+  await deleteDoc(doc(db, 'games', game.id));
+  if (!game.lotId) return;
+  try {
+    const lot = await getLot(game.lotId);
+    if (!lot || lot.gameIds[game.lotIndex] !== game.id) return;
+    const gameIds = lot.gameIds.map((id, i) => (i === game.lotIndex ? '' : id || ''));
+    await updateDoc(doc(db, 'lots', lot.id), { gameIds });
+  } catch {
+    // Lot supprimé ou appartenant à un autre joueur (suppression par l'admin) : rien à faire.
+  }
 }
 
 export function finishGame(game, status) {

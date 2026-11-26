@@ -122,6 +122,8 @@ test('règles Firestore', async (t) => {
         query(collection(bob, 'games'), where('status', '==', 'terminee'), where('level', '==', 'facile')),
       ),
     );
+    // Toutes les parties terminées (détection des records).
+    await assertSucceeds(getDocs(query(collection(bob, 'games'), where('status', '==', 'terminee'))));
     await assertFails(getDocs(collection(alice, 'games')));
     await assertFails(getDocs(query(collection(intrus, 'games'), where('status', '==', 'terminee'))));
     await assertSucceeds(getDocs(collection(admin, 'games')));

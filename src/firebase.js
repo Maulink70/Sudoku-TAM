@@ -24,6 +24,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  getDocsFromServer,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -348,6 +349,15 @@ export async function leaderboard(level) {
     if (!cur || g.elapsedSeconds < cur.elapsedSeconds) best.set(g.uid, g);
   }
   return [...best.values()].sort((a, b) => a.elapsedSeconds - b.elapsedSeconds);
+}
+
+/**
+ * Toutes les parties terminées, tous joueurs confondus, pour repérer les nouveaux records.
+ * Lues sur le serveur uniquement : hors ligne, le cache ne connaît qu'une partie des parties.
+ */
+export async function listFinishedGames() {
+  const snap = await getDocsFromServer(query(collection(db, 'games'), where('status', '==', 'terminee')));
+  return snap.docs.map(gameFromSnap);
 }
 
 export function errorMessage(err) {

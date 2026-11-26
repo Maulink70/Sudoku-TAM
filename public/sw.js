@@ -2,7 +2,7 @@
 
 // Service worker : met en cache l'interface pour un démarrage rapide.
 // Les échanges avec Firebase (autres domaines) ne passent pas par ce cache.
-const CACHE = 'sudoku-v10';
+const CACHE = 'sudoku-v11';
 const SHELL = [
   '/',
   '/index.html',
@@ -51,5 +51,34 @@ self.addEventListener('fetch', (event) => {
         return res;
       })
       .catch(() => caches.match(req.mode === 'navigate' ? '/index.html' : req)),
+  );
+});
+
+// Notification envoyée à l'administrateur quand un joueur lance une partie (api/notify-game.js).
+self.addEventListener('push', (event) => {
+  let d = {};
+  try {
+    const payload = event.data.json();
+    d = payload.data || payload.notification || payload;
+  } catch {
+    // message sans contenu lisible : notification par défaut
+  }
+  event.waitUntil(
+    self.registration.showNotification(d.title || 'SudoTam', {
+      body: d.body || '',
+      icon: '/icons/icon-192.png',
+      data: { url: d.url || '/' },
+    }),
+  );
+});
+
+// Un toucher sur la notification ramène à l'appli (ou l'ouvre).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => 'focus' in c);
+      return open ? open.focus() : self.clients.openWindow(event.notification.data?.url || '/');
+    }),
   );
 });

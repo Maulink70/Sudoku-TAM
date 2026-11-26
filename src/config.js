@@ -13,5 +13,9 @@ export const SUPER_ADMIN_UID = '7ywYHqyVTNSvMPU3zAJ2ktMpjyi2';
 
 export const MAX_HINTS = 10;
 
+// Clé publique « Web Push » (console Firebase → Paramètres → Cloud Messaging).
+export const VAPID_KEY =
+  'BHySm-XHWnaEZaHIURBTIIbASt2YlGXtZAInlSzi4Eviy_9IY0xmFl6DOJPXP6s5du37oh42Ta4eAnG7IuFMva0';
+
 // En local (localhost), l'appli utilise les émulateurs Firebase au lieu du vrai projet.
 export const USE_EMULATORS = ['localhost', '127.0.0.1'].includes(location.hostname);

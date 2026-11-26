@@ -42,6 +42,7 @@ const svg = (body, { stroke = 1.8, fill = false } = {}) =>
 
 const ICONS = {
   back: svg('<path d="M15 18l-6-6 6-6"/>', { stroke: 2 }),
+  cross: svg('<path d="M6 6l12 12M18 6L6 18"/>', { stroke: 2.2 }),
   arrowLeft: svg(
     '<path d="M11.2 4.3a1 1 0 0 1 1.7.7v3.5H20a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5h-7.1V19a1 1 0 0 1-1.7.7l-7.4-7a1 1 0 0 1 0-1.4z"/>',
     { fill: true },
@@ -130,6 +131,14 @@ function fmtTime(sec) {
   const mm = String(m).padStart(2, '0');
   const ss = String(s).padStart(2, '0');
   return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/** Durée en toutes lettres : « 2 min 33 s ». */
+function fmtDuration(sec) {
+  sec = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return [h && `${h} h`, (h || m) && `${m} min`, `${sec % 60} s`].filter(Boolean).join(' ');
 }
 
 function fmtDate(date, withTime = true) {
@@ -372,6 +381,8 @@ fb.onUserChanged(async (user) => {
   authUser = user;
   if (!user) {
     me = null;
+    recordNews = [];
+    recordsCheckedAt = 0;
     syncBackWatcher(true);
     leaveGame(false);
     renderLogin();
@@ -537,6 +548,8 @@ async function renderHome() {
       ${APP_VERSION ? `<div class="menu-version">Version du ${fmtDate(new Date(APP_VERSION))}</div>` : ''}
     </div>
 
+    <div id="record-slot"></div>
+
     <div class="hello">
       <div class="muted">Bonjour</div>
       <h2>${esc(me.name)} 👋</h2>
@@ -563,6 +576,8 @@ async function renderHome() {
 
     <button class="quit-btn" id="h-quit">${ICONS.power}Quitter</button>`;
 
+  showRecordNews();
+  checkRecords();
   document.getElementById('h-quit').onclick = quitApp;
   if (current) document.getElementById('resume').onclick = () => go(`#/partie/${current.id}`);
   document.getElementById('m-new').onclick = openLevelSheet;
@@ -598,6 +613,91 @@ async function renderHome() {
   document.getElementById('m-password').onclick = changePassword;
   document.getElementById('m-logout').onclick = () => fb.logout();
 }
+
+// ------------------------------------------------------------ records battus
+
+// Chaque appareil retient le record de chaque niveau qu'il a déjà vu. Quand le record en ligne
+// est meilleur, un bandeau vert l'annonce sur l'accueil jusqu'à sa fermeture (ou jusqu'au
+// prochain démarrage de l'appli, les annonces n'étant gardées qu'en mémoire).
+let recordNews = [];
+let recordsCheckedAt = 0;
+let recordsDirty = false;
+
+async function checkRecords() {
+  if (!me || (!recordsDirty && Date.now() - recordsCheckedAt < 120_000)) return;
+  recordsCheckedAt = Date.now();
+  recordsDirty = false;
+  const uid = me.uid;
+  let games;
+  try {
+    games = await fb.listFinishedGames();
+  } catch {
+    return; // hors ligne : on réessaiera plus tard
+  }
+  if (!me || me.uid !== uid) return;
+
+  const best = {};
+  for (const g of games) {
+    const cur = best[g.level];
+    if (!cur || g.elapsedSeconds < cur.elapsedSeconds) best[g.level] = g;
+  }
+  const key = `sudoku-records-${uid}`;
+  let seen = null;
+  try {
+    seen = JSON.parse(localStorage.getItem(key));
+  } catch {
+    // stockage illisible : on repart comme sur un nouvel appareil
+  }
+  const next = {};
+  for (const l of RANKED_LEVELS) {
+    const g = best[l.id];
+    if (!g) continue;
+    next[l.id] = g.elapsedSeconds;
+    // Premier passage sur cet appareil : on prend note des records sans rien annoncer.
+    if (!seen) continue;
+    const before = seen[l.id];
+    if (before === undefined || g.elapsedSeconds < before) {
+      const what = before === undefined ? 'a établi le premier record' : 'a battu le record';
+      recordNews = recordNews.filter((n) => n.level !== l.id);
+      recordNews.push({
+        level: l.id,
+        text: `${g.playerName} ${what} en mode ${l.label}, temps : ${fmtDuration(g.elapsedSeconds)}`,
+      });
+    }
+  }
+  try {
+    localStorage.setItem(key, JSON.stringify(next));
+  } catch {
+    // stockage indisponible (navigation privée) : l'annonce reviendra à la prochaine ouverture
+  }
+  showRecordNews();
+}
+
+/** Affiche les annonces de record sur l'accueil (texte défilant, croix pour fermer). */
+function showRecordNews() {
+  const slot = document.getElementById('record-slot');
+  if (!slot) return;
+  if (!recordNews.length) {
+    slot.innerHTML = '';
+    return;
+  }
+  const text = recordNews.map((n) => `🏆 ${esc(n.text)}`).join(' &nbsp;•&nbsp; ');
+  const seconds = Math.max(12, Math.round(text.length * 0.2));
+  // Délai négatif : le texte est déjà à l'écran à l'affichage au lieu d'entrer depuis le bord.
+  slot.innerHTML = `
+    <div class="record-bar" role="status">
+      <div class="record-scroll"><span style="animation-duration:${seconds}s;animation-delay:-${Math.round(seconds * 0.3)}s">${text}</span></div>
+      <button class="record-close" id="record-close" aria-label="Fermer">${ICONS.cross}</button>
+    </div>`;
+  document.getElementById('record-close').onclick = () => {
+    recordNews = [];
+    slot.innerHTML = '';
+  };
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && document.getElementById('record-slot')) checkRecords();
+});
 
 async function installApp() {
   if (installPrompt) {
@@ -1207,6 +1307,7 @@ function win() {
   g.status = 'terminee';
   render();
   saveNow('terminee');
+  recordsDirty = true;
 
   const lvl = levelInfo(g.level);
   vibrate([60, 40, 60, 40, 200]);

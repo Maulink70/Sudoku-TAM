@@ -2,7 +2,7 @@
 
 // Service worker : met en cache l'interface pour un démarrage rapide.
 // Les échanges avec Firebase (autres domaines) ne passent pas par ce cache.
-const CACHE = 'sudoku-v8';
+const CACHE = 'sudoku-v9';
 const SHELL = [
   '/',
   '/index.html',
@@ -37,6 +37,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
+  // Le numéro de version est toujours lu en direct, jamais depuis le cache.
+  if (url.pathname === '/version.json') return;
 
   // Réseau d'abord (pour recevoir les mises à jour), cache en secours.
   event.respondWith(

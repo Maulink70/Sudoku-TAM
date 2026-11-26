@@ -1794,6 +1794,86 @@ body:has(.update-bar:not([hidden])) #app:not(.wide) {
   border-top: 1px solid var(--border-soft);
 }
 
+/* Écran d'aide : rubriques dépliables. */
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.help-item {
+  padding: 0;
+}
+
+.help-item summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.help-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.help-item summary .chev {
+  margin-left: auto;
+  display: flex;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.help-item[open] summary .chev {
+  transform: rotate(90deg);
+}
+
+.help-body {
+  padding: 0 16px 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.help-body,
+.dialog ol,
+.dialog h4 {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.help-body h4,
+.dialog h4 {
+  margin: 14px 0 6px;
+  font-size: 15px;
+  color: var(--blue);
+}
+
+.help-body p,
+.help-body ol,
+.help-body ul,
+.dialog ol {
+  margin: 10px 0;
+}
+
+.help-body ol,
+.help-body ul,
+.dialog ol {
+  padding-left: 22px;
+}
+
+.help-body li + li,
+.dialog li + li {
+  margin-top: 6px;
+}
+
+.login .link-btn + .link-btn {
+  margin-top: 0;
+  padding-top: 4px;
+}
+
 /* Bouton « Quitter » en bas de l'accueil, cerclé de rouge. */
 .quit-btn {
   display: flex;

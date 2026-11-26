@@ -91,6 +91,9 @@ const ICONS = {
   trophy: svg(
     '<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 14v4M8.5 21h7M9.5 18h5"/>',
   ),
+  help: svg(
+    '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.6 2.3c-.8.5-1.2 1-1.2 1.9"/><path d="M12 16.8h.01"/>',
+  ),
   bell: svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   admin: svg(
     '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11h5M19.5 8.5v5"/>',
@@ -371,6 +374,7 @@ function route() {
   if (hash === '#/grilles') return renderLots();
   if (hash === '#/historique') return renderHistory();
   if (hash === '#/classement') return renderLeaderboard();
+  if (hash === '#/aide') return renderHelp();
   if (hash === '#/admin' && me.isAdmin) return renderAdmin();
   if (hash !== '#/') return go('#/');
   return renderHome();
@@ -449,7 +453,10 @@ function renderLogin() {
       <p class="error-msg" id="login-error"></p>
       <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
       <button class="link-btn" type="button" id="forgot">Mot de passe oublié ?</button>
+      <button class="link-btn" type="button" id="how-install">Comment installer l’application ?</button>
     </form>`;
+  document.getElementById('how-install').onclick = () =>
+    openDialog({ title: INSTALL_TITLE, body: installHelpHtml(), ok: 'Fermer', cancel: null });
   const form = document.getElementById('login-form');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -545,6 +552,7 @@ async function renderHome() {
       <button id="m-sound"><span id="m-sound-icon">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</span>Sons<span class="value" id="m-sound-value">${sound.isMuted() ? 'Coupés' : 'Activés'}</span></button>
       ${fb.isSuperAdmin(authUser) ? `<button id="m-push" hidden>${ICONS.bell}Notifications<span class="value" id="m-push-value"></span></button>` : ''}
       ${me.isAdmin ? `<button id="m-admin">${ICONS.admin}Administration<span class="chev">${ICONS.chev}</span></button>` : ''}
+      <button id="m-help">${ICONS.help}Aide<span class="chev">${ICONS.chev}</span></button>
       <button id="m-install" ${showInstall ? '' : 'hidden'}>${ICONS.install}Installer l’application<span class="chev">${ICONS.chev}</span></button>
       <button id="m-password">${ICONS.key}Changer mon mot de passe<span class="chev">${ICONS.chev}</span></button>
       <button id="m-logout">${ICONS.logout}Se déconnecter</button>
@@ -613,6 +621,7 @@ async function renderHome() {
     sound.place();
   };
   document.getElementById('m-install').onclick = installApp;
+  document.getElementById('m-help').onclick = () => go('#/aide');
   setupPushToggle();
   document.getElementById('m-password').onclick = changePassword;
   document.getElementById('m-logout').onclick = () => fb.logout();
@@ -736,7 +745,8 @@ async function installApp() {
     installPrompt.prompt();
     await installPrompt.userChoice.catch(() => {});
     installPrompt = null;
-    document.getElementById('m-install').hidden = true;
+    const menuItem = document.getElementById('m-install');
+    if (menuItem) menuItem.hidden = true;
   } else {
     openDialog({
       title: 'Installer sur l’iPhone',
@@ -1730,6 +1740,151 @@ async function renderSolution(id) {
 // ---------------------------------------------------------- classement
 
 let rankingLevel = 'facile';
+
+// ------------------------------------------------------------------- aide
+
+const INSTALL_TITLE = 'Installer l’application (iPhone, iPad, Android via Chrome)';
+
+/** Les deux façons d'installer l'appli (aussi affichées depuis l'écran de connexion). */
+function installHelpHtml() {
+  return `
+    <h4>iPhone et iPad</h4>
+    <ol>
+      <li>Ouvrez <b>${location.host}</b> dans <b>Safari</b> (pas dans Chrome).</li>
+      <li>Touchez le bouton <b>Partager</b> : le carré avec une flèche vers le haut (en bas de l’écran sur iPhone, en haut à droite sur iPad).</li>
+      <li>Faites défiler la liste et touchez <b>« Sur l’écran d’accueil »</b>.</li>
+      <li>Touchez <b>Ajouter</b>.</li>
+    </ol>
+    <h4>Android via Chrome</h4>
+    <ol>
+      <li>Ouvrez <b>${location.host}</b> dans <b>Chrome</b>.</li>
+      <li>Touchez le menu <b>⋮</b> en haut à droite.</li>
+      <li>Touchez <b>« Installer l’application »</b> (ou <b>« Ajouter à l’écran d’accueil »</b>), puis <b>Installer</b>.</li>
+    </ol>
+    <p>L’icône SudoTam apparaît sur l’écran d’accueil : l’appli s’ouvre alors en plein écran.</p>`;
+}
+
+const HELP_SECTIONS = () => [
+  {
+    title: INSTALL_TITLE,
+    body: `${installHelpHtml()}
+      ${installPrompt ? '<button class="btn btn-primary btn-small" id="help-install">Installer maintenant</button>' : ''}
+      <p>Une fois connecté, le menu ⚙️ propose aussi « Installer l’application » tant qu’elle n’est pas installée.</p>`,
+  },
+  {
+    title: 'Comment jouer',
+    body: `
+      <p>Le but : remplir la grille pour que chaque <b>ligne</b>, chaque <b>colonne</b> et chaque <b>carré de 3×3</b> contienne les chiffres de 1 à 9, une seule fois chacun.</p>
+      <ol>
+        <li>Sur l’accueil, touchez <b>Nouvelle partie</b> et choisissez un niveau, de Débutant à Extrême.</li>
+        <li>Touchez une case vide, puis un chiffre en bas de l’écran.</li>
+        <li><b>Effacer</b> vide la case choisie ; <b>Annuler</b> revient un coup en arrière.</li>
+      </ol>
+      <p>La ligne, la colonne et le carré de la case choisie sont mis en valeur, ainsi que les chiffres identiques. Un chiffre déjà présent dans la même ligne, colonne ou carré s’affiche en <b>rouge</b>. Un chiffre du bas devient pâle quand il est déjà placé 9 fois.</p>
+      <p>Il n’y a pas d’autre aide pendant la partie : quand la grille est pleine, les cases fausses passent en rouge pour être corrigées. Une fois la grille juste, c’est gagné !</p>
+      <p>Le <b>chronomètre</b> ne compte que le temps joué : il s’arrête avec le bouton pause ⏸ et quand vous quittez l’appli. La partie est <b>enregistrée en continu</b> ; vous pouvez la reprendre plus tard, même sur un autre appareil.</p>`,
+  },
+  {
+    title: 'Notes',
+    body: `
+      <p>Les notes servent à inscrire en petit, dans une case, les chiffres que vous hésitez à y mettre.</p>
+      <ol>
+        <li>Touchez <b>Notes</b> : la pastille passe à <b>ON</b>.</li>
+        <li>Touchez une case vide, puis un ou plusieurs chiffres : ils s’inscrivent en petit. Touchez de nouveau un chiffre pour l’enlever.</li>
+        <li>Touchez encore <b>Notes</b> (pastille <b>OFF</b>) pour revenir à la saisie normale.</li>
+      </ol>
+      <p>Quand vous placez un vrai chiffre, il est retiré automatiquement des notes de sa ligne, de sa colonne et de son carré.</p>`,
+  },
+  {
+    title: 'Bonus',
+    body: `
+      <p>Chaque partie donne droit à <b>${MAX_HINTS} bonus</b>. Un bonus remplit une case vide <b>au hasard</b> avec le bon chiffre.</p>
+      <p>La case s’affiche en <b>violet</b> et ne peut plus être modifiée. Le compteur en haut de l’écran indique les bonus utilisés ; ils sont aussi notés dans « Mes parties ».</p>`,
+  },
+  {
+    title: 'Abandonner et voir la solution',
+    body: `
+      <p>Pendant une partie, <b>Abandonner</b> (le drapeau rouge) arrête la partie et affiche la <b>solution</b> : vos bons chiffres, vos erreurs corrigées et les cases qui restaient à trouver.</p>
+      <p>Une partie abandonnée ne peut plus être reprise. Sa solution reste consultable dans « Mes parties ».</p>`,
+  },
+  {
+    title: 'Mes parties',
+    body: `
+      <p>Vous y trouvez le nombre de parties jouées, gagnées et abandonnées, vos <b>meilleurs temps</b> par niveau et la liste de toutes vos parties.</p>
+      <ul>
+        <li><b>Reprendre</b> continue une partie en cours.</li>
+        <li><b>Solution</b> montre la solution d’une partie abandonnée.</li>
+        <li>La <b>corbeille</b> supprime une partie : elle disparaît aussi des statistiques et du classement.</li>
+      </ul>`,
+  },
+  {
+    title: 'Mes grilles',
+    body: `
+      <p>« Mes grilles » crée des <b>lots de 4 grilles</b> d’un même niveau, à jouer sur papier ou sur l’écran.</p>
+      <ol>
+        <li>Touchez <b>Générer 4 grilles</b> et choisissez le niveau.</li>
+        <li>Touchez une grille pour la jouer sur l’écran, quand vous voulez.</li>
+        <li>Une grille ne compte dans vos parties et vos statistiques qu’une fois jouée sur l’écran.</li>
+      </ol>
+      <p>Vous pouvez créer autant de lots que vous voulez et supprimer ceux dont vous n’avez plus besoin.</p>`,
+  },
+  {
+    title: 'Impression des grilles',
+    body: `
+      <ul>
+        <li><b>Pendant une partie</b> : le bouton 🖨️ en haut imprime la grille telle qu’elle est, avec le niveau et la date.</li>
+        <li><b>Dans « Mes grilles »</b> : <b>Imprimer les 4</b> met les 4 grilles du lot sur une seule feuille A4, avec les chiffres déjà trouvés.</li>
+        <li><b>Imprimer les solutions</b> imprime les 4 solutions sur une feuille séparée.</li>
+      </ul>
+      <p>Dans la fenêtre d’impression du téléphone, vous pouvez aussi choisir « Enregistrer en PDF ».</p>`,
+  },
+  {
+    title: 'Classement et records',
+    body: `
+      <p>Le <b>Classement</b> montre le meilleur temps de chaque joueur, niveau par niveau.</p>
+      <p>Quand le record d’un niveau est battu, un bandeau vert l’annonce sur l’accueil de tous les joueurs. Il se ferme avec la croix.</p>`,
+  },
+  {
+    title: 'Réglages',
+    body: `
+      <p>La roue crantée ⚙️ de l’accueil ouvre les réglages :</p>
+      <ul>
+        <li><b>Thème</b> : Automatique, Clair, Bleu nuit, Noir ou Papier.</li>
+        <li><b>Taille des chiffres</b> : Normale, Grande ou Très grande (aussi avec le bouton « Aa » pendant une partie).</li>
+        <li><b>Sons</b> : activés ou coupés.</li>
+        <li><b>Changer mon mot de passe</b> et <b>Se déconnecter</b>.</li>
+      </ul>
+      <p>Mot de passe oublié ? Touchez « Mot de passe oublié ? » sur l’écran de connexion, ou demandez-en un nouveau à l’administrateur.</p>`,
+  },
+  {
+    title: 'Mise à jour et fermeture',
+    body: `
+      <p>Quand une nouvelle version existe, un bandeau <b>« Nouvelle version disponible »</b> apparaît en bas : touchez <b>Mettre à jour</b>. Vos parties sont conservées. La version installée est indiquée en bas du menu ⚙️.</p>
+      <p>Le bouton <b>Quitter</b> de l’accueil ferme l’appli sans vous déconnecter. Sur iPhone, fermez-la avec le geste habituel.</p>`,
+  },
+];
+
+function renderHelp() {
+  $app.innerHTML = `
+    <div class="topbar">
+      <button class="back-btn" id="ai-back" aria-label="Retour">${ICONS.arrowLeft}</button>
+      <h1>Aide</h1><span class="spacer"></span>
+    </div>
+    <div class="help">
+      ${HELP_SECTIONS()
+        .map(
+          (sec) => `
+        <details class="card help-item">
+          <summary>${sec.title}<span class="chev">${ICONS.chev}</span></summary>
+          <div class="help-body">${sec.body}</div>
+        </details>`,
+        )
+        .join('')}
+    </div>`;
+  document.getElementById('ai-back').onclick = () => go('#/');
+  const install = document.getElementById('help-install');
+  if (install) install.onclick = installApp;
+}
 
 async function renderLeaderboard() {
   $app.innerHTML = `

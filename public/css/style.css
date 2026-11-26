@@ -538,51 +538,6 @@ button {
   color: var(--blue);
 }
 
-.levels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.level-btn {
-  border: 1px solid var(--border);
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 18px 14px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-shadow: var(--elev);
-  transition: transform 0.08s;
-}
-
-.level-btn:active {
-  transform: scale(0.97);
-  background: var(--surface);
-}
-
-.level-btn .name {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.level-btn .dots {
-  display: flex;
-  gap: 5px;
-}
-
-.level-btn .dots i {
-  width: 18px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--cell-hl);
-}
-
-.level-btn .dots i.on {
-  background: var(--lvl, var(--blue));
-}
-
 .menu-list {
   display: flex;
   flex-direction: column;
@@ -1915,73 +1870,193 @@ table.games tr:last-child td {
   font-size: 15px;
 }
 
-.home-actions {
+/* Accueil : 4 grandes tuiles (2×2 sur téléphone, une ligne de 4 sur écran large). */
+.home-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin-top: 16px;
 }
 
-.home-tile {
+.home-card {
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text);
   border-radius: var(--radius);
-  padding: 14px 8px;
+  padding: 18px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  font: inherit;
+  box-shadow: var(--elev);
+  transition: transform 0.08s;
+}
+
+.home-card:active {
+  transform: scale(0.97);
+  background: var(--surface);
+}
+
+.home-card .ico {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  color: var(--c);
+}
+
+.home-card .ico svg {
+  width: 28px;
+  height: 28px;
+}
+
+.home-card b {
+  font-size: 17px;
+  margin-top: 4px;
+}
+
+.home-card small {
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.home-card.c-new {
+  --c: #2fb37a;
+}
+
+.home-card.c-history {
+  --c: #4f7fe0;
+}
+
+.home-card.c-lots {
+  --c: #9b6ee6;
+}
+
+.home-card.c-ranking {
+  --c: #e0a02a;
+}
+
+@media (min-width: 700px) {
+  #app:has(.home-grid) {
+    max-width: 860px;
+  }
+
+  .home-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Panneau du bas : choix du niveau. */
+.sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 560px;
+  max-height: 92dvh;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.25);
+  animation: sheet-up 0.22s ease-out;
+}
+
+.sheet::backdrop {
+  background: rgba(20, 28, 44, 0.5);
+}
+
+.sheet-body {
+  padding: 10px 18px calc(var(--safe-bottom) + 18px);
+}
+
+.sheet-grab {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  margin: 0 auto 10px;
+}
+
+.sheet h3 {
+  margin: 4px 0 2px;
+  font-size: 19px;
+}
+
+.sheet p {
+  margin: 0 0 14px;
+}
+
+.sheet .btn-block {
+  margin-top: 14px;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: none;
+  }
+}
+
+.level-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.level-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: var(--elev);
+  padding: 18px 4px 14px;
+  border: 1.5px solid color-mix(in srgb, var(--lvl) 45%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lvl) 13%, var(--card));
+  color: var(--text);
+  font: inherit;
+  transition: transform 0.08s;
 }
 
-.home-tile svg {
-  width: 28px;
-  height: 28px;
-  color: var(--blue);
+.level-card:active {
+  transform: scale(0.96);
 }
 
-.home-tile.primary {
-  background: linear-gradient(135deg, #325aaf, #4f7fe0);
-  border-color: transparent;
-  color: #fff;
+.level-card[disabled] {
+  opacity: 0.6;
+}
+
+.level-card .name {
   font-size: 15px;
-  box-shadow: var(--shadow);
+  font-weight: 700;
 }
 
-.home-tile.primary svg {
-  color: #fff;
-}
-
-.home-tile:active {
-  transform: scale(0.97);
-}
-
-.levels.levels-compact {
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.levels-compact .level-btn {
-  padding: 10px 8px;
-  gap: 6px;
-  align-items: center;
-  text-align: center;
-}
-
-.levels-compact .level-btn .name {
-  font-size: 14px;
-}
-
-.levels-compact .level-btn .dots {
+.level-card .bars {
+  display: flex;
+  align-items: flex-end;
   gap: 3px;
+  height: 32px;
 }
 
-.levels-compact .level-btn .dots i {
-  width: 9px;
-  height: 4px;
+.level-card .bars i {
+  width: 6px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--lvl) 22%, transparent);
+}
+
+.level-card .bars i.on {
+  background: var(--lvl);
 }
 
 .intro-text {

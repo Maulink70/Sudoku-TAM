@@ -25,8 +25,9 @@ const LEVELS = [
 ];
 const PLAYABLE_LEVELS = LEVELS.filter((l) => !l.hidden);
 const RANKED_LEVELS = LEVELS.filter((l) => l.ranked !== false && !l.hidden);
-const levelDots = (l) =>
-  `<span class="dots">${[1, 2, 3, 4, 5, 6].map((n) => `<i class="${n <= l.dots ? 'on' : ''}"></i>`).join('')}</span>`;
+// Barres montantes (comme un signal de réseau) : autant de barres pleines que le niveau est difficile.
+const levelBars = (l) =>
+  `<span class="bars">${[1, 2, 3, 4, 5, 6].map((n) => `<i class="${n <= l.dots ? 'on' : ''}" style="height:${6 + n * 4}px"></i>`).join('')}</span>`;
 const levelInfo = (id) => LEVELS.find((l) => l.id === id) || LEVELS.find((l) => l.id === 'moyen');
 
 const STATUS_LABEL = { en_cours: 'En cours', terminee: 'Terminée', abandonnee: 'Abandonnée' };
@@ -341,6 +342,7 @@ window.addEventListener('hashchange', route);
 function route() {
   if (!me) return;
   const hash = location.hash || '#/';
+  closeLevelSheet();
   syncBackWatcher(hash === '#/');
   const gameMatch = hash.match(/^#\/partie\/([\w-]+)$/);
   if (!gameMatch || (G.game && G.game.id !== gameMatch[1])) leaveGame();
@@ -544,29 +546,18 @@ async function renderHome() {
         : ''
     }
 
-    <div class="home-actions">
-      <button class="home-tile primary" id="m-history">${ICONS.history}<span>Mes parties</span></button>
-      <button class="home-tile" id="m-ranking">${ICONS.trophy}<span>Classement</span></button>
-      <button class="home-tile" id="m-lots">${ICONS.grid4}<span>Mes grilles</span></button>
-    </div>
-
-    <div class="section-title">Nouvelle partie</div>
-    <div class="levels levels-compact">
-      ${PLAYABLE_LEVELS.map(
-        (l) => `
-        <button class="level-btn" data-level="${l.id}" style="--lvl:${l.color}">
-          <span class="name">${l.label}</span>${levelDots(l)}
-        </button>`,
-      ).join('')}
+    <div class="home-grid">
+      <button class="home-card c-new" id="m-new"><span class="ico">${ICONS.play}</span><b>Nouvelle partie</b><small>Choisir un niveau</small></button>
+      <button class="home-card c-history" id="m-history"><span class="ico">${ICONS.history}</span><b>Mes parties</b><small>En cours et terminées</small></button>
+      <button class="home-card c-lots" id="m-lots"><span class="ico">${ICONS.grid4}</span><b>Mes grilles</b><small>Créer, consulter, imprimer des grilles</small></button>
+      <button class="home-card c-ranking" id="m-ranking"><span class="ico">${ICONS.trophy}</span><b>Classement</b></button>
     </div>
 
     <button class="quit-btn" id="h-quit">${ICONS.power}Quitter</button>`;
 
   document.getElementById('h-quit').onclick = quitApp;
   if (current) document.getElementById('resume').onclick = () => go(`#/partie/${current.id}`);
-  $app.querySelectorAll('.level-btn').forEach((btn) => {
-    btn.onclick = () => newGame(btn.dataset.level, btn);
-  });
+  document.getElementById('m-new').onclick = openLevelSheet;
   document.getElementById('m-history').onclick = () => go('#/historique');
   document.getElementById('m-ranking').onclick = () => go('#/classement');
   document.getElementById('m-lots').onclick = () => go('#/grilles');
@@ -634,8 +625,44 @@ async function changePassword() {
   }
 }
 
+/** Panneau du bas : choix du niveau d'une nouvelle partie. */
+function openLevelSheet() {
+  closeLevelSheet();
+  const dlg = document.createElement('dialog');
+  dlg.id = 'level-sheet';
+  dlg.className = 'sheet';
+  dlg.innerHTML = `
+    <div class="sheet-body">
+      <div class="sheet-grab"></div>
+      <h3>Nouvelle partie</h3>
+      <p class="muted">Choisissez le niveau de difficulté</p>
+      <div class="level-cards">
+        ${PLAYABLE_LEVELS.map(
+          (l) => `
+          <button class="level-card" data-level="${l.id}" style="--lvl:${l.color}">
+            ${levelBars(l)}<span class="name">${l.label}</span>
+          </button>`,
+        ).join('')}
+      </div>
+      <button class="btn btn-ghost btn-block" id="ls-cancel">Annuler</button>
+    </div>`;
+  document.body.appendChild(dlg);
+  dlg.onclose = () => dlg.remove();
+  // Un toucher en dehors du panneau (sur le fond assombri) le referme.
+  dlg.onclick = (e) => e.target === dlg && dlg.close();
+  dlg.querySelector('#ls-cancel').onclick = () => dlg.close();
+  dlg.querySelectorAll('.level-card').forEach((btn) => {
+    btn.onclick = () => newGame(btn.dataset.level, btn);
+  });
+  dlg.showModal();
+}
+
+function closeLevelSheet() {
+  document.getElementById('level-sheet')?.close();
+}
+
 async function newGame(level, btn) {
-  document.querySelectorAll('.level-btn').forEach((b) => (b.disabled = true));
+  document.querySelectorAll('.level-card').forEach((b) => (b.disabled = true));
   if (btn) btn.querySelector('.name').textContent = 'Génération…';
   // Laisse le navigateur afficher « Génération… » avant le calcul.
   await new Promise((r) => setTimeout(r, 30));
@@ -646,7 +673,7 @@ async function newGame(level, btn) {
     go(`#/partie/${game.id}`);
   } catch (err) {
     toast(fb.errorMessage(err));
-    document.querySelectorAll('.level-btn').forEach((b) => (b.disabled = false));
+    document.querySelectorAll('.level-card').forEach((b) => (b.disabled = false));
     if (btn) btn.querySelector('.name').textContent = levelInfo(level).label;
   }
 }

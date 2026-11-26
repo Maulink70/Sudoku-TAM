@@ -31,6 +31,9 @@ https://sudoku-tam.vercel.app
   vert défilant l'annonce à tous sur l'accueil (« Mauro a battu le record en mode Débutant,
   temps : 2 min 33 s »). Il se ferme avec la croix ou disparaît au prochain démarrage. Chaque
   appareil retient les records qu'il a déjà vus.
+- **Aide** : menu ⚙️ → Aide. Rubriques dépliables : installation (iPhone, iPad, Android via
+  Chrome), comment jouer, notes, bonus, Mes grilles, impression, etc. La procédure d'installation
+  est aussi accessible depuis l'écran de connexion.
 - **Mise à jour** : à l'ouverture et à chaque retour dans l'appli, la version ouverte est comparée
   à celle en ligne (`version.json`, écrit à la compilation). S'il y a du nouveau, un bandeau
   « Nouvelle version disponible » propose de mettre à jour (jamais pendant une partie). La version

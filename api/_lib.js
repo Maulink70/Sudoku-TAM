@@ -16,18 +16,57 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Lit la clé du compte de service (le fichier JSON téléchargé depuis la console Firebase).
+ * Tolère les accidents de copier-coller : guillemets autour, retours à la ligne réels dans la
+ * clé privée, contenu encodé en base64.
+ */
+export function parseServiceAccount(raw) {
+  const text = raw
+    .trim()
+    .replace(/^(['"`])([\s\S]*)\1$/, '$2')
+    .trim();
+  // Les retours à la ligne réels à l'intérieur d'une chaîne JSON sont remis sous forme « \n ».
+  const escapeInStrings = (t) => {
+    let out = '';
+    let inString = false;
+    for (let i = 0; i < t.length; i++) {
+      const c = t[i];
+      if (inString && c === '\\') out += c + (t[++i] ?? '');
+      else if (c === '"') ((inString = !inString), (out += c));
+      else if (inString && c === '\n') out += '\\n';
+      else if (inString && c === '\r') out += '';
+      else out += c;
+    }
+    return out;
+  };
+  const candidates = [text, escapeInStrings(text)];
+  if (/^[A-Za-z0-9+/=_\s-]+$/.test(text)) candidates.push(Buffer.from(text, 'base64').toString('utf8'));
+  for (const candidate of candidates) {
+    try {
+      const account = JSON.parse(candidate);
+      if (account?.private_key && account?.client_email && account?.project_id) return account;
+    } catch {
+      // essai suivant
+    }
+  }
+  // Indices sans rien dévoiler de la clé, pour aider à corriger la variable.
+  const hints = [
+    `${text.length} caractères`,
+    text.startsWith('{') ? 'commence bien par {' : 'ne commence pas par {',
+    text.endsWith('}') ? 'finit bien par }' : 'ne finit pas par }',
+    text.includes('private_key') ? 'contient private_key' : 'ne contient pas private_key',
+  ].join(', ');
+  throw new ApiError(
+    503,
+    `La clé du compte de service enregistrée dans Vercel est illisible (${hints}). Collez-y tout le contenu du fichier .json téléchargé.`,
+  );
+}
+
 function adminApp() {
   if (getApps().length) return getApps()[0];
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (raw) {
-    let account;
-    try {
-      account = JSON.parse(raw);
-    } catch {
-      throw new ApiError(503, 'La clé du compte de service enregistrée dans Vercel est illisible.');
-    }
-    return initializeApp({ credential: cert(account) });
-  }
+  if (raw) return initializeApp({ credential: cert(parseServiceAccount(raw)) });
   // Développement local : les émulateurs n'ont pas besoin de clé.
   if (process.env.FIREBASE_AUTH_EMULATOR_HOST) return initializeApp({ projectId: 'sudoku-tam' });
   throw new ApiError(503, 'Fonction non configurée : la clé du compte de service manque dans Vercel.');

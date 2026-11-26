@@ -91,6 +91,7 @@ const ICONS = {
   trophy: svg(
     '<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 14v4M8.5 21h7M9.5 18h5"/>',
   ),
+  bell: svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   admin: svg(
     '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11h5M19.5 8.5v5"/>',
   ),
@@ -418,6 +419,7 @@ fb.onUserChanged(async (user) => {
       isAdmin: player.isAdmin || fb.isSuperAdmin(user),
     };
     fb.touchPlayer(user).catch(() => {});
+    if (fb.isSuperAdmin(user)) fb.refreshPush().catch(() => {});
     if (player.theme && THEMES[player.theme] && player.theme !== getTheme())
       setTheme(player.theme, { sync: false });
     if (!location.hash || location.hash === '#/login') history.replaceState(null, '', '#/');
@@ -541,6 +543,7 @@ async function renderHome() {
         </select>
       </label>
       <button id="m-sound"><span id="m-sound-icon">${sound.isMuted() ? ICONS.soundOff : ICONS.soundOn}</span>Sons<span class="value" id="m-sound-value">${sound.isMuted() ? 'Coupés' : 'Activés'}</span></button>
+      ${fb.isSuperAdmin(authUser) ? `<button id="m-push" hidden>${ICONS.bell}Notifications<span class="value" id="m-push-value"></span></button>` : ''}
       ${me.isAdmin ? `<button id="m-admin">${ICONS.admin}Administration<span class="chev">${ICONS.chev}</span></button>` : ''}
       <button id="m-install" ${showInstall ? '' : 'hidden'}>${ICONS.install}Installer l’application<span class="chev">${ICONS.chev}</span></button>
       <button id="m-password">${ICONS.key}Changer mon mot de passe<span class="chev">${ICONS.chev}</span></button>
@@ -610,6 +613,7 @@ async function renderHome() {
     sound.place();
   };
   document.getElementById('m-install').onclick = installApp;
+  setupPushToggle();
   document.getElementById('m-password').onclick = changePassword;
   document.getElementById('m-logout').onclick = () => fb.logout();
 }
@@ -698,6 +702,34 @@ function showRecordNews() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && document.getElementById('record-slot')) checkRecords();
 });
+
+// Réglage « Notifications » (administrateur principal seulement) : être prévenu sur cet
+// appareil quand un autre joueur lance une partie.
+async function setupPushToggle() {
+  const btn = document.getElementById('m-push');
+  if (!btn || !(await fb.pushSupported())) return;
+  const value = document.getElementById('m-push-value');
+  const show = () => (value.textContent = fb.pushEnabled() ? 'Activées' : 'Désactivées');
+  show();
+  btn.hidden = false;
+  btn.onclick = async () => {
+    btn.disabled = true;
+    value.textContent = '…';
+    try {
+      if (fb.pushEnabled()) {
+        await fb.disablePush();
+        toast('Notifications désactivées sur cet appareil');
+      } else {
+        await fb.enablePush();
+        toast('Notifications activées sur cet appareil ✔');
+      }
+    } catch (err) {
+      toast(fb.errorMessage(err), 4000);
+    }
+    btn.disabled = false;
+    show();
+  };
+}
 
 async function installApp() {
   if (installPrompt) {
@@ -1866,6 +1898,30 @@ async function playerAction(act, p) {
       if (isMe) me.name = fields.name;
       toast('Joueur modifié ✔');
     } else if (act === 'reset') {
+      // L'administrateur principal peut définir lui-même le mot de passe ; sinon, e-mail.
+      if (fb.isSuperAdmin(authUser)) {
+        let byMail = false;
+        const asked = openDialog({
+          title: `Mot de passe de ${p.name}`,
+          body: `
+            <label class="field">Nouveau mot de passe
+              <input name="password" required minlength="6" autocomplete="off" autocapitalize="off" spellcheck="false" /></label>
+            <p class="hint-text">Au moins 6 caractères. Les appareils de ce joueur seront déconnectés : il faudra se reconnecter avec ce mot de passe.</p>
+            <button type="button" class="link-btn" id="pw-mail">Envoyer plutôt un e-mail de réinitialisation</button>`,
+          ok: 'Définir',
+        });
+        document.getElementById('pw-mail').onclick = () => {
+          byMail = true;
+          document.getElementById('dialog').close('cancel');
+        };
+        const data = await asked;
+        if (data) {
+          await fb.setPlayerPassword(p.email, data.password);
+          toast(`Mot de passe de ${p.name} modifié ✔`);
+          return;
+        }
+        if (!byMail) return;
+      }
       const ok = await openDialog({
         title: 'Réinitialiser le mot de passe',
         body: `<p>Un e-mail va être envoyé à <b>${esc(p.email)}</b> avec un lien pour choisir un nouveau mot de passe.</p>`,

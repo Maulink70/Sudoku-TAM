@@ -21,6 +21,12 @@ https://sudoku-tam.vercel.app
   « Mes grilles » et « Classement » (2×2 sur téléphone, une ligne de 4 sur écran large).
   « Nouvelle partie » ouvre un panneau où l'on choisit le niveau. Les réglages (thème, taille des
   chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue crantée ⚙️.
+- **Mot de passe d'un joueur** : l'administrateur principal peut définir lui-même le nouveau mot
+  de passe d'un joueur (Administration → Joueurs → « Mot de passe »), ou envoyer l'e-mail de
+  réinitialisation.
+- **Notifications** : l'administrateur principal peut activer, sur son téléphone, une notification
+  « Julie a lancé une partie Facile » chaque fois qu'un autre joueur lance une partie
+  (menu ⚙️ → Notifications).
 - **Records** : quand le record d'un niveau est battu (ou établi pour la première fois), un bandeau
   vert défilant l'annonce à tous sur l'accueil (« Mauro a battu le record en mode Débutant,
   temps : 2 min 33 s »). Il se ferme avec la croix ou disparaît au prochain démarrage. Chaque
@@ -60,6 +66,11 @@ https://sudoku-tam.vercel.app
   - `firebase.js` : connexion et accès à Firestore
   - `sudoku.js` : générateur et solveur
   - `config.js` : configuration Firebase et UID de l'administrateur principal
+- `api/` : fonctions serveur Vercel qui agissent avec les droits d'administration Firebase
+  (`set-password`, `push-token`, `notify-game`). Elles vérifient le jeton de connexion de
+  l'appelant et lisent la clé du compte de service dans la variable d'environnement Vercel
+  `FIREBASE_SERVICE_ACCOUNT` (console Firebase → Paramètres → Comptes de service). La clé publique
+  « Web Push » des notifications est dans `src/config.js`.
 - `firestore.rules` : règles de sécurité Firestore
 - `vercel.json` : build et hébergement Vercel
 
@@ -70,6 +81,8 @@ https://sudoku-tam.vercel.app
 - `games/{id}` : une partie (`uid`, `playerName`, `level`, `status`, grilles, `elapsedSeconds`,
   `hintsLeft`, `errors`, `startedAt`, `finishedAt`, et `lotId`/`lotIndex` si elle vient d'un lot).
 - `lots/{id}` : 4 grilles imprimables (`uid`, `level`, `puzzles`, `solutions`, `gameIds`).
+- `push/{uid}` et `notified/{id}` : appareils à notifier et parties déjà signalées. Gérés par
+  les fonctions serveur uniquement (inaccessibles depuis l'appli).
 
 ## Mise en place (déjà faite)
 

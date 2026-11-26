@@ -34,7 +34,8 @@ import {
   limit,
   serverTimestamp,
 } from 'firebase/firestore';
-import { firebaseConfig, USE_EMULATORS, SUPER_ADMIN_UID, MAX_HINTS } from './config.js';
+import { getMessaging, getToken, deleteToken, isSupported as messagingSupported } from 'firebase/messaging';
+import { firebaseConfig, USE_EMULATORS, SUPER_ADMIN_UID, MAX_HINTS, VAPID_KEY } from './config.js';
 
 const app = initializeApp(firebaseConfig);
 
@@ -58,6 +59,28 @@ const normEmail = (email) =>
 
 const toDate = (ts) => (ts && typeof ts.toDate === 'function' ? ts.toDate() : ts || null);
 
+// ---------------------------------------------------------- fonctions serveur
+
+const apiError = (message) => Object.assign(new Error(message), { code: 'api/error' });
+
+/** Appelle une fonction serveur (dossier api/) au nom du joueur connecté. */
+async function callApi(name, body) {
+  const token = await auth.currentUser.getIdToken();
+  let res;
+  try {
+    res = await fetch(`/api/${name}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw apiError('Serveur injoignable. Vérifiez votre réseau.');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw apiError(data.error || 'Erreur du serveur. Réessayez.');
+  return data;
+}
+
 // ------------------------------------------------------------------ comptes
 
 export const isSuperAdmin = (user) => user?.uid === SUPER_ADMIN_UID;
@@ -68,6 +91,11 @@ export function onUserChanged(cb) {
 
 export function login(email, password) {
   return signInWithEmailAndPassword(auth, normEmail(email), password);
+}
+
+/** L'administrateur principal définit le mot de passe d'un joueur. */
+export function setPlayerPassword(email, password) {
+  return callApi('set-password', { email: normEmail(email), password });
 }
 
 export function logout() {
@@ -224,6 +252,8 @@ export async function createGame(user, playerName, level, puzzle, solution, lot 
     updatedAt: serverTimestamp(),
     finishedAt: null,
   });
+  // Prévient l'administrateur principal (notification sur son téléphone), sans attendre.
+  if (!isSuperAdmin(user)) callApi('notify-game', { gameId: ref.id }).catch(() => {});
   return gameFromSnap(await getDoc(ref));
 }
 
@@ -360,6 +390,52 @@ export async function listFinishedGames() {
   return snap.docs.map(gameFromSnap);
 }
 
+// ------------------------------------------------------------ notifications
+
+// Notifications de l'administrateur principal : chaque appareil où il les active reçoit un
+// message quand un autre joueur lance une partie (voir api/notify-game.js et public/sw.js).
+const PUSH_KEY = 'sudoku-push';
+
+export async function pushSupported() {
+  return (
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window &&
+    (await messagingSupported().catch(() => false))
+  );
+}
+
+export const pushEnabled = () =>
+  localStorage.getItem(PUSH_KEY) === '1' && Notification.permission === 'granted';
+
+async function pushToken() {
+  const registration = await navigator.serviceWorker.ready;
+  return getToken(getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
+}
+
+export async function enablePush() {
+  if ((await Notification.requestPermission()) !== 'granted') {
+    throw apiError('Notifications refusées. Autorisez-les pour SudoTam dans les réglages du téléphone.');
+  }
+  await callApi('push-token', { token: await pushToken(), enable: true });
+  localStorage.setItem(PUSH_KEY, '1');
+}
+
+export async function disablePush() {
+  try {
+    await callApi('push-token', { token: await pushToken(), enable: false });
+    await deleteToken(getMessaging(app));
+  } finally {
+    localStorage.removeItem(PUSH_KEY);
+  }
+}
+
+/** Au démarrage : renvoie le jeton de l'appareil, qui peut changer avec le temps. */
+export async function refreshPush() {
+  if (!(await pushSupported()) || !pushEnabled()) return;
+  await callApi('push-token', { token: await pushToken(), enable: true });
+}
+
 export function errorMessage(err) {
   const map = {
     'auth/invalid-credential': 'E-mail ou mot de passe incorrect.',
@@ -379,7 +455,7 @@ export function errorMessage(err) {
     unavailable: 'Serveur injoignable. Vérifiez votre réseau.',
   };
   if (map[err?.code]) return map[err.code];
-  if (err?.code === 'player-exists') return err.message;
+  if (err?.code === 'player-exists' || err?.code === 'api/error') return err.message;
   if (err?.code) return `Une erreur est survenue (${err.code}).`;
   return err?.message || 'Une erreur est survenue.';
 }

@@ -49,7 +49,7 @@ https://sudoku-tam.vercel.app
 - **Chronomètre** avec pause. Il ne compte que le temps réellement joué (il s'arrête quand
   l'appli passe en arrière-plan).
 - **Victoire** : les chiffres sautent de joie, un message défile, feux d'artifice et fanfare.
-- **Classement** : meilleur temps de chaque joueur, par niveau.
+- **Classement** : sur un seul écran, le joueur le plus rapide de chaque niveau et son temps.
 - **Historique** personnel : date de début, niveau, statut (terminée avec le temps, abandonnée ou
   en cours), erreurs et bonus utilisés. Les parties en cours peuvent être reprises.
 - **Administration** : ajout de joueurs (e-mail et mot de passe), modification, désactivation,

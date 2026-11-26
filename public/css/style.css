@@ -1407,51 +1407,64 @@ table.games tr:last-child td {
   padding: 10px 2px;
 }
 
-.rank-list {
-  padding: 4px 0;
+/* Classement : un tableau « niveau → record » qui tient sur un écran. */
+.rk {
+  padding: 0;
+  margin-top: 12px;
+  overflow: hidden;
 }
 
-.rank-row {
-  display: flex;
+.rk-head,
+.rk-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 30%) 1fr;
+  gap: 10px;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 14px;
 }
 
-.rank-row + .rank-row {
+.rk-head {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+  background: var(--surface);
+}
+
+.rk-row {
+  padding-top: 14px;
+  padding-bottom: 14px;
   border-top: 1px solid var(--border-soft);
 }
 
-.rank-row.me {
-  background: var(--blue-soft);
+.rk-lvl {
+  font-weight: 800;
+  font-size: 16px;
 }
 
-.rank-row .rank {
-  width: 30px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.rank-row .who {
-  flex: 1;
-  font-weight: 600;
+.rk-one {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  font-size: 16px;
 }
 
-.rank-row .who small {
-  font-weight: 400;
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 2px;
+.rk-one > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rank-row .time {
+.rk-time {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  font-size: 17px;
+}
+
+.rk-none {
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .item-actions {
@@ -1658,11 +1671,6 @@ table.games tr:last-child td {
   font-size: 12px;
   font-weight: 600;
   color: var(--lvl);
-}
-
-.tabs.tabs-levels button {
-  font-size: 12px;
-  padding: 10px 2px;
 }
 
 /* Bouton retour des écrans : rond bleu avec une flèche pleine. */

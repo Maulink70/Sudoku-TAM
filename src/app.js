@@ -1739,8 +1739,6 @@ async function renderSolution(id) {
 
 // ---------------------------------------------------------- classement
 
-let rankingLevel = 'facile';
-
 // ------------------------------------------------------------------- aide
 
 const INSTALL_TITLE = 'Installer l’application (iPhone, iPad, Android via Chrome)';
@@ -1841,7 +1839,7 @@ const HELP_SECTIONS = () => [
   {
     title: 'Classement et records',
     body: `
-      <p>Le <b>Classement</b> montre le meilleur temps de chaque joueur, niveau par niveau.</p>
+      <p>Le <b>Classement</b> montre, pour chaque niveau, le joueur le plus rapide et son temps.</p>
       <p>Quand le record d’un niveau est battu, un bandeau vert l’annonce sur l’accueil de tous les joueurs. Il se ferme avec la croix.</p>`,
   },
   {
@@ -1892,42 +1890,35 @@ async function renderLeaderboard() {
       <button class="back-btn" id="r-back" aria-label="Retour">${ICONS.arrowLeft}</button>
       <h1>Classement</h1><span class="spacer"></span>
     </div>
-    <div class="tabs tabs-levels" style="grid-template-columns: repeat(${RANKED_LEVELS.length}, 1fr)">
-      ${RANKED_LEVELS.map((l) => `<button data-level="${l.id}" class="${l.id === rankingLevel ? 'active' : ''}">${l.label}</button>`).join('')}
-    </div>
     <div id="r-list"><div class="splash"><div class="spinner"></div></div></div>`;
   document.getElementById('r-back').onclick = () => go('#/');
-  $app.querySelectorAll('[data-level]').forEach((b) => {
-    b.onclick = () => {
-      rankingLevel = b.dataset.level;
-      renderLeaderboard();
-    };
-  });
 
-  let rows = [];
+  // Le record de chaque niveau : le joueur le plus rapide et son temps.
+  let records = [];
   try {
-    rows = await fb.leaderboard(rankingLevel);
+    records = await Promise.all(RANKED_LEVELS.map(async (l) => (await fb.leaderboard(l.id))[0] || null));
   } catch (err) {
     toast(fb.errorMessage(err));
   }
   const box = document.getElementById('r-list');
   if (!box || location.hash !== '#/classement') return;
-  const medals = ['🥇', '🥈', '🥉'];
-  box.innerHTML = rows.length
-    ? `<div class="card rank-list">
-        ${rows
-          .map(
-            (g, i) => `
-          <div class="rank-row ${g.uid === me.uid ? 'me' : ''}">
-            <span class="rank">${medals[i] || i + 1}</span>
-            <span class="who">${esc(g.playerName)}<small>${fmtDate(g.finishedAt || g.startedAt, false)}</small></span>
-            <span class="time">${fmtTime(g.elapsedSeconds)}</span>
-          </div>`,
-          )
-          .join('')}
-      </div>
-      <p class="muted center small-note">Meilleur temps de chaque joueur au niveau ${levelInfo(rankingLevel).label}.</p>`
-    : `<div class="empty">Aucune grille ${levelInfo(rankingLevel).label} terminée pour le moment.<br>À vous de jouer !</div>`;
+  box.innerHTML = `
+    <div class="card rk">
+      <div class="rk-head"><span>Niveau</span><span>Record</span></div>
+      ${RANKED_LEVELS.map((l, i) => {
+        const g = records[i];
+        return `
+        <div class="rk-row">
+          <span class="rk-lvl" style="color:${l.color}">${l.label}</span>
+          ${
+            g
+              ? `<span class="rk-one"><span>🥇 <b>${esc(g.playerName)}</b></span><b class="rk-time">${fmtTime(g.elapsedSeconds)}</b></span>`
+              : '<span class="rk-none">Aucun temps</span>'
+          }
+        </div>`;
+      }).join('')}
+    </div>
+    <p class="muted center small-note">Le meilleur temps de chaque niveau.</p>`;
 }
 
 // --------------------------------------------------------------- admin

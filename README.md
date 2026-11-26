@@ -17,9 +17,10 @@ https://sudoku-tam.vercel.app
   erreurs corrigées, cases à trouver.
 - Pendant la partie, le bouton **« Accueil »** ramène à l'accueil. Supprimer une partie issue
   d'un lot remet sa grille « à jouer ».
-- **Accueil** : « Mes parties », « Classement » et « Mes grilles » en accès direct ; les réglages
-  (thème, taille des chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue
-  crantée ⚙️.
+- **Accueil** : quatre tuiles avec leur explication — « Nouvelle partie », « Mes parties »,
+  « Mes grilles » et « Classement » (2×2 sur téléphone, une ligne de 4 sur écran large).
+  « Nouvelle partie » ouvre un panneau où l'on choisit le niveau. Les réglages (thème, taille des
+  chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue crantée ⚙️.
 - **Quitter** : bouton en bas de l'accueil. Il ferme l'appli installée sur Android (où le retour
   du téléphone ramène aussi à l'écran précédent) ; ailleurs (iPhone, navigateur), un message
   explique comment la fermer.

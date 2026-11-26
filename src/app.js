@@ -5,6 +5,9 @@ import { sound } from './sounds.js';
 import { MAX_HINTS } from './config.js';
 
 const $app = document.getElementById('app');
+// Version de l'appli : date de compilation, fournie par scripts/build.mjs.
+/* global __APP_VERSION__ */
+const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
 
 const LEVELS = [
   { id: 'debutant', label: 'Débutant', dots: 1, color: 'var(--lvl-debutant)' },
@@ -39,6 +42,10 @@ const svg = (body, { stroke = 1.8, fill = false } = {}) =>
 
 const ICONS = {
   back: svg('<path d="M15 18l-6-6 6-6"/>', { stroke: 2 }),
+  arrowLeft: svg(
+    '<path d="M11.2 4.3a1 1 0 0 1 1.7.7v3.5H20a1.5 1.5 0 0 1 1.5 1.5v4a1.5 1.5 0 0 1-1.5 1.5h-7.1V19a1 1 0 0 1-1.7.7l-7.4-7a1 1 0 0 1 0-1.4z"/>',
+    { fill: true },
+  ),
   power: svg('<path d="M12 3v8"/><path d="M6.6 6.6a7.5 7.5 0 1 0 10.8 0"/>', { stroke: 2 }),
   undo: svg('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 3.5v4.2h4.2"/>', { stroke: 1.6 }),
   eraser: svg(
@@ -527,6 +534,7 @@ async function renderHome() {
       <button id="m-install" ${showInstall ? '' : 'hidden'}>${ICONS.install}Installer l’application<span class="chev">${ICONS.chev}</span></button>
       <button id="m-password">${ICONS.key}Changer mon mot de passe<span class="chev">${ICONS.chev}</span></button>
       <button id="m-logout">${ICONS.logout}Se déconnecter</button>
+      ${APP_VERSION ? `<div class="menu-version">Version du ${fmtDate(new Date(APP_VERSION))}</div>` : ''}
     </div>
 
     <div class="hello">
@@ -1258,7 +1266,7 @@ async function renderHistory() {
 
   $app.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" id="h-back" aria-label="Retour">${ICONS.back}</button>
+      <button class="back-btn" id="h-back" aria-label="Retour">${ICONS.arrowLeft}</button>
       <h1>Mes parties</h1><span class="spacer"></span>
     </div>
     <div class="summary">
@@ -1373,7 +1381,7 @@ async function renderLots() {
   const byId = new Map(games.map((g) => [g.id, g]));
   $app.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" id="l-back" aria-label="Retour">${ICONS.back}</button>
+      <button class="back-btn" id="l-back" aria-label="Retour">${ICONS.arrowLeft}</button>
       <h1>Mes grilles</h1><span class="spacer"></span>
     </div>
     <p class="muted intro-text">Générez 4 grilles d’un même niveau, imprimez-les sur une seule feuille A4 et jouez celles que vous voulez sur le téléphone.</p>
@@ -1498,7 +1506,7 @@ async function renderLot(id) {
   };
   $app.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" id="lt-back" aria-label="Retour">${ICONS.back}</button>
+      <button class="back-btn" id="lt-back" aria-label="Retour">${ICONS.arrowLeft}</button>
       <h1>4 grilles</h1><span class="spacer"></span>
     </div>
     <div class="lot-head"><span class="lvl-tag" style="--lvl:${lvl.color}">${lvl.label}</span>
@@ -1570,7 +1578,7 @@ async function renderSolution(id) {
   const back = g.lotId ? `#/grilles/${g.lotId}` : '#/historique';
   $app.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" id="s-back" aria-label="Retour">${ICONS.back}</button>
+      <button class="back-btn" id="s-back" aria-label="Retour">${ICONS.arrowLeft}</button>
       <h1>Solution</h1><span class="spacer"></span>
     </div>
     <div class="lot-head"><span class="lvl-tag" style="--lvl:${lvl.color}">${lvl.label}</span>
@@ -1593,7 +1601,7 @@ let rankingLevel = 'facile';
 async function renderLeaderboard() {
   $app.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" id="r-back" aria-label="Retour">${ICONS.back}</button>
+      <button class="back-btn" id="r-back" aria-label="Retour">${ICONS.arrowLeft}</button>
       <h1>Classement</h1><span class="spacer"></span>
     </div>
     <div class="tabs tabs-levels" style="grid-template-columns: repeat(${RANKED_LEVELS.length}, 1fr)">
@@ -1642,7 +1650,7 @@ const adminFilters = { status: '', uid: '' };
 async function renderAdmin() {
   $app.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" id="a-back" aria-label="Retour">${ICONS.back}</button>
+      <button class="back-btn" id="a-back" aria-label="Retour">${ICONS.arrowLeft}</button>
       <h1>Administration</h1><span class="spacer"></span>
     </div>
     <div class="tabs">
@@ -1873,6 +1881,43 @@ function renderAdminGames(players, allGames) {
 
 // Active l'état :active des boutons sur iOS (effet d'appui des touches du pavé).
 document.addEventListener('touchstart', () => {}, { passive: true });
+
+// ------------------------------------------------------------ mise à jour
+
+// Compare la version de l'appli ouverte avec celle en ligne, à l'ouverture et à chaque
+// retour au premier plan. S'il y a du nouveau, un bandeau propose de mettre à jour.
+let lastUpdateCheck = 0;
+
+async function checkForUpdate() {
+  const bar = document.getElementById('update-bar');
+  if (!APP_VERSION || !bar.hidden || Date.now() - lastUpdateCheck < 60_000) return;
+  lastUpdateCheck = Date.now();
+  try {
+    const res = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const { version } = await res.json();
+    if (version && version !== APP_VERSION) bar.hidden = false;
+  } catch {
+    // Hors ligne : on réessaiera au prochain retour dans l'appli.
+  }
+}
+
+document.getElementById('update-btn').onclick = async (e) => {
+  e.currentTarget.disabled = true;
+  e.currentTarget.textContent = 'Mise à jour…';
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    await reg?.update();
+  } catch {
+    // Le rechargement suffit : les fichiers sont demandés au réseau en premier.
+  }
+  location.reload();
+};
+
+checkForUpdate();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkForUpdate();
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));

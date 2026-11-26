@@ -21,6 +21,10 @@ https://sudoku-tam.vercel.app
   « Mes grilles » et « Classement » (2×2 sur téléphone, une ligne de 4 sur écran large).
   « Nouvelle partie » ouvre un panneau où l'on choisit le niveau. Les réglages (thème, taille des
   chiffres, sons, administration, mot de passe, déconnexion) sont sous la roue crantée ⚙️.
+- **Mise à jour** : à l'ouverture et à chaque retour dans l'appli, la version ouverte est comparée
+  à celle en ligne (`version.json`, écrit à la compilation). S'il y a du nouveau, un bandeau
+  « Nouvelle version disponible » propose de mettre à jour (jamais pendant une partie). La version
+  s'affiche en bas du menu ⚙️.
 - **Quitter** : bouton en bas de l'accueil. Il ferme l'appli installée sur Android (où le retour
   du téléphone ramène aussi à l'écran précédent) ; ailleurs (iPhone, navigateur), un message
   explique comment la fermer.
@@ -47,6 +51,7 @@ https://sudoku-tam.vercel.app
 
 - `public/` : page, styles, icônes, manifeste PWA et service worker
 - `src/` : code de l'appli, regroupé par esbuild dans `public/build/app.js`
+  (`scripts/build.mjs`, qui écrit aussi le numéro de version)
   - `app.js` : interface (écrans, jeu, admin)
   - `firebase.js` : connexion et accès à Firestore
   - `sudoku.js` : générateur et solveur

@@ -1665,6 +1665,78 @@ table.games tr:last-child td {
   padding: 10px 2px;
 }
 
+/* Bouton retour des écrans : rond bleu avec une flèche pleine. */
+.back-btn {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--blue);
+  color: #fff;
+  box-shadow: var(--elev);
+}
+
+.back-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.back-btn:active {
+  filter: brightness(0.9);
+}
+
+.topbar:has(.back-btn) .spacer {
+  width: 46px;
+}
+
+/* Bandeau « Nouvelle version disponible » (masqué pendant une partie). */
+.update-bar {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 12px);
+  transform: translateX(-50%);
+  width: min(calc(100% - 20px), 540px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 10px 10px 16px;
+  border-radius: 14px;
+  background: var(--toast);
+  color: var(--bg);
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+.update-bar[hidden],
+#app.wide ~ .update-bar {
+  display: none;
+}
+
+.update-bar .btn {
+  background: var(--blue);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Laisse la place du bandeau sous le contenu. */
+body:has(.update-bar:not([hidden])) #app:not(.wide) {
+  padding-bottom: calc(var(--safe-bottom) + 84px);
+}
+
+.menu-version {
+  padding: 10px 16px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  border-top: 1px solid var(--border-soft);
+}
+
 /* Bouton discret « Quitter » en bas de l'accueil. */
 .quit-btn {
   display: flex;
